@@ -1,0 +1,145 @@
+[2026-04-28 15:12:23]	[info] incremental build: 37 source files changed
+These source files will be recompiled
+---
+'e:\car project\CAR\Core\Src\can.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\freertos.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\gpio.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\main.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\stm32f1xx_hal_msp.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\stm32f1xx_hal_timebase_tim.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\stm32f1xx_it.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\system_stm32f1xx.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\usart.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_can.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_cortex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_dma.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_exti.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_flash.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_flash_ex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_gpio.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_gpio_ex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_pwr.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_rcc.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_rcc_ex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim_ex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_uart.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\hardware\OLED.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\hardware\OLED_Data.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os2.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\croutine.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\event_groups.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\list.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\portable\MemMang\heap_4.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM3\port.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\queue.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\stream_buffer.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\tasks.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\timers.c': object (.o) file not exist
+'e:\car project\CAR\MDK-ARM\startup_stm32f103xe.s': object (.o) file not exist
+
+[2026-04-28 15:12:26]	[done]
+	build successfully !
+
+[2026-04-28 15:39:37]	[info] incremental build: 36 source files changed
+These source files will be recompiled
+---
+'e:\car project\CAR\Core\Src\can.c': compiler options has been changed.
+'e:\car project\CAR\Core\Src\freertos.c': compiler options has been changed.
+'e:\car project\CAR\Core\Src\gpio.c': compiler options has been changed.
+'e:\car project\CAR\Core\Src\main.c': compiler options has been changed.
+'e:\car project\CAR\Core\Src\stm32f1xx_hal_msp.c': compiler options has been changed.
+'e:\car project\CAR\Core\Src\stm32f1xx_hal_timebase_tim.c': compiler options has been changed.
+'e:\car project\CAR\Core\Src\stm32f1xx_it.c': compiler options has been changed.
+'e:\car project\CAR\Core\Src\system_stm32f1xx.c': compiler options has been changed.
+'e:\car project\CAR\Core\Src\usart.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_can.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_cortex.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_dma.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_exti.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_flash.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_flash_ex.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_gpio.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_gpio_ex.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_pwr.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_rcc.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_rcc_ex.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim_ex.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_uart.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\hardware\OLED.c': compiler options has been changed.
+'e:\car project\CAR\Drivers\hardware\OLED_Data.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os2.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\croutine.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\event_groups.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\list.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\portable\MemMang\heap_4.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM3\port.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\queue.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\stream_buffer.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\tasks.c': compiler options has been changed.
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\timers.c': compiler options has been changed.
+
+[2026-04-28 15:39:39]	link failed !, exit code: 1
+   at unify_builder.Program.Main(String[] args_)
+---
+"e:/car project/CAR/MDK-ARM/build/CAR/CAR.sct", line 7 (column 8): Error: L6236E: No section matches selector - no section to be FIRST/LAST.
+Not enough information to list image symbols.
+Not enough information to list the image map.
+Finished: 2 information, 0 warning and 1 error messages.
+
+
+[2026-04-28 15:42:19]	[info] incremental build: 1 source files changed
+These source files will be recompiled
+---
+'e:\car project\CAR\MDK-ARM\startup_stm32f103xe.s': source file has been changed.
+
+[2026-04-28 15:42:20]	[done]
+	build successfully !
+
+[2026-04-30 19:42:26]	[info] incremental build: 37 source files changed
+These source files will be recompiled
+---
+'e:\car project\CAR\Core\Src\can.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\freertos.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\gpio.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\main.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\stm32f1xx_hal_msp.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\stm32f1xx_hal_timebase_tim.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\stm32f1xx_it.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\system_stm32f1xx.c': object (.o) file not exist
+'e:\car project\CAR\Core\Src\usart.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_can.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_cortex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_dma.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_exti.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_flash.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_flash_ex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_gpio.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_gpio_ex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_pwr.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_rcc.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_rcc_ex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim_ex.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_uart.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\hardware\OLED.c': object (.o) file not exist
+'e:\car project\CAR\Drivers\hardware\OLED_Data.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os2.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\croutine.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\event_groups.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\list.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\portable\MemMang\heap_4.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM3\port.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\queue.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\stream_buffer.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\tasks.c': object (.o) file not exist
+'e:\car project\CAR\Middlewares\Third_Party\FreeRTOS\Source\timers.c': object (.o) file not exist
+'e:\car project\CAR\MDK-ARM\startup_stm32f103xe.s': object (.o) file not exist
+
+[2026-04-30 19:42:29]	[done]
+	build successfully !
+
