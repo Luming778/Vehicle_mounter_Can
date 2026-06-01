@@ -1,0 +1,11 @@
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\MQTTConnectClient.c
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\MQTTPacket.h
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\MQTTConnect.h
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\MQTTPublish.h
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\MQTTSubscribe.h
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\MQTTUnsubscribe.h
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\MQTTFormat.h
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\StackTrace.h
+car\mqttconnectclient.o: E:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
+car\mqttconnectclient.o: ..\Middlewares\MQTTclient\mqtt\MQTTPacket.h
+car\mqttconnectclient.o: E:\keil5\ARM\ARMCC\Bin\..\include\string.h

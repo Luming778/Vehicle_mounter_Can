@@ -20,7 +20,10 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "can.h"
+#include "crc.h"
 #include "dma.h"
+#include "i2c.h"
+#include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -61,7 +64,7 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+#define APP_START_ADDR  0x0800c000
 /* USER CODE END 0 */
 
 /**
@@ -72,7 +75,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  __disable_irq();
+	SCB->VTOR =APP_START_ADDR;
+	__enable_irq();
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -89,7 +94,6 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
  
-   /* USER CODE END SysInit */
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -99,6 +103,9 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_I2C1_Init();
+  MX_SPI2_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   
   OLED_Init();

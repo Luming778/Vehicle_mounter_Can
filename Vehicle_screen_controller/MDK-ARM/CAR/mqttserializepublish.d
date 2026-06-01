@@ -1,0 +1,11 @@
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\MQTTSerializePublish.c
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\MQTTPacket.h
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\MQTTConnect.h
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\MQTTPublish.h
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\MQTTSubscribe.h
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\MQTTUnsubscribe.h
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\MQTTFormat.h
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\StackTrace.h
+car\mqttserializepublish.o: E:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
+car\mqttserializepublish.o: ..\Middlewares\MQTTclient\mqtt\MQTTPacket.h
+car\mqttserializepublish.o: E:\keil5\ARM\ARMCC\Bin\..\include\string.h

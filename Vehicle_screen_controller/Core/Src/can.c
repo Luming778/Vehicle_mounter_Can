@@ -87,8 +87,10 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /* CAN1 interrupt Init */
-    HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+    HAL_NVIC_SetPriority(CAN1_RX1_IRQn, 6, 0);
+    HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
   /* USER CODE BEGIN CAN1_MspInit 1 */
 
   /* USER CODE END CAN1_MspInit 1 */
@@ -114,6 +116,7 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* canHandle)
 
     /* CAN1 interrupt Deinit */
     HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
+    HAL_NVIC_DisableIRQ(CAN1_RX1_IRQn);
   /* USER CODE BEGIN CAN1_MspDeInit 1 */
 
   /* USER CODE END CAN1_MspDeInit 1 */
@@ -139,17 +142,23 @@ void CAN_FilterConfig(void)
   // 4. 位宽32位
   filterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
 
-  // 5. 配置ID寄存器-FR1
-  filterConfig.FilterIdHigh = 0x0000;
+  // 5. 过滤器 0：精确匹配 ID 0x666 → FIFO0
+  filterConfig.FilterIdHigh = (0x666 << 5);     // 0xCCC0
   filterConfig.FilterIdLow = 0x0000;
-
-  // 6. 配置掩码寄存器-FR2
-  filterConfig.FilterMaskIdHigh = 0x0000;
+  filterConfig.FilterMaskIdHigh = (0x7FF << 5); // 0xFFE0 — 精确匹配
   filterConfig.FilterMaskIdLow = 0x0000;
-
-  // 7. 激活过滤器组
   filterConfig.FilterActivation = ENABLE;
+  HAL_CAN_ConfigFilter(&hcan, &filterConfig);
 
+  // 6. 过滤器 1 不动（留给 OTA 用，已在 Int_can.c 中配置）
+
+  // 7. 过滤器 2：精确匹配 ID 0x555 → FIFO0（节点2）
+  filterConfig.FilterBank = 2;
+  filterConfig.FilterIdHigh = (0x555 << 5);     // 0xAAA0
+  filterConfig.FilterIdLow = 0x0000;
+  filterConfig.FilterMaskIdHigh = (0x7FF << 5); // 0xFFE0
+  filterConfig.FilterMaskIdLow = 0x0000;
+  filterConfig.FilterActivation = ENABLE;
   HAL_CAN_ConfigFilter(&hcan, &filterConfig);
 }
 

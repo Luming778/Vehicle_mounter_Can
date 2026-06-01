@@ -21,12 +21,19 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+#include "app_update.h"
+
 #define	g_circle_buff_len	512           //串口3环形buff长度
 static uint8_t g_rx_buf[g_circle_buff_len];//
 static uint8_t g_uart2_rx_char[4];   //
 uint8_t g_uart3_rx_char;   //串口3接收数据变量
 circle_buf	g_circle_buff;        //串口3环形buff
 extern TaskHandle_t AT_pars_handle;//AT指令分析任务句柄
+extern SemaphoreHandle_t ota_sem;
+static uint8_t usart1_rx_buf[32];
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -59,7 +66,7 @@ void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
-
+  HAL_UARTEx_ReceiveToIdle_IT(&huart1, usart1_rx_buf, sizeof(usart1_rx_buf));
   /* USER CODE END USART1_Init 2 */
 
 }
@@ -153,6 +160,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+    /* USART1 interrupt Init */
+    HAL_NVIC_SetPriority(USART1_IRQn, 8, 0);
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* USER CODE BEGIN USART1_MspInit 1 */
 
   /* USER CODE END USART1_MspInit 1 */
@@ -183,7 +193,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_AFIO_REMAP_USART2_ENABLE();
 
     /* USART2 interrupt Init */
-    HAL_NVIC_SetPriority(USART2_IRQn, 6, 0);
+    HAL_NVIC_SetPriority(USART2_IRQn, 9, 0);
     HAL_NVIC_EnableIRQ(USART2_IRQn);
   /* USER CODE BEGIN USART2_MspInit 1 */
 
@@ -232,7 +242,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_LINKDMA(uartHandle,hdmarx,hdma_usart3_rx);
 
     /* USART3 interrupt Init */
-    HAL_NVIC_SetPriority(USART3_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(USART3_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(USART3_IRQn);
   /* USER CODE BEGIN USART3_MspInit 1 */
 
@@ -257,6 +267,8 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     */
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9|GPIO_PIN_10);
 
+    /* USART1 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(USART1_IRQn);
   /* USER CODE BEGIN USART1_MspDeInit 1 */
 
   /* USER CODE END USART1_MspDeInit 1 */
@@ -307,6 +319,34 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
+/* UART 空闲中断接收回调（合并 USART1 OTA 触发 + USART2/3 原有逻辑） */
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+{
+    if (huart->Instance == USART1)
+    {
+        if (Size < sizeof(usart1_rx_buf))
+            usart1_rx_buf[Size] = '\0';
+        else
+            usart1_rx_buf[sizeof(usart1_rx_buf) - 1] = '\0';
+        printf("USART1 RX: %d bytes, data: [%s]\r\n", Size, usart1_rx_buf);
+        if (update_state == UPDATE_IDLE && strstr((char *)usart1_rx_buf, "update"))
+        {
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+            xSemaphoreGiveFromISR(ota_sem, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        }
+        HAL_UARTEx_ReceiveToIdle_IT(&huart1, usart1_rx_buf, sizeof(usart1_rx_buf));
+    }
+    else if (huart->Instance == USART2)
+    {
+        // 原有 voice 模块逻辑（保持不变）
+    }
+    else if (huart->Instance == USART3)
+    {
+        // 原有 ESP8266 逻辑（保持不变）
+    }
+}
+
 /* 接收中断(接收一个字节触发一次)函数 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -314,6 +354,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
   if(huart->Instance == USART2)
   {
+		printf("USART2 RX: %02X %02X %02X %02X\r\n", g_uart2_rx_char[0], g_uart2_rx_char[1], g_uart2_rx_char[2], g_uart2_rx_char[3]);
 		if(g_uart2_rx_char[0]==0x4A &&g_uart2_rx_char[1]==0x5F &&g_uart2_rx_char[3]==0x8B)
 		{
 		    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
