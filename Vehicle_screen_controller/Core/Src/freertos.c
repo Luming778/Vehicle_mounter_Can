@@ -35,6 +35,8 @@
 #include "mqtt_config.h"
 #include "mqtt_log.h"
 #include "mqttclient.h"
+#include "app_update.h"
+#include "semphr.h"
 #include "demo.h"
 #include "lvgl.h"
 #include "lv_port_lcd_stm32.h"
@@ -60,6 +62,7 @@ void can_task(void * pvParameters );
 void MQTT_Task(void*parm);
 void voice_task(void * pvParameters );
 void lvgl_demo_task(void * pvParameters );
+void ota_task(void *param);
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -69,6 +72,10 @@ TaskHandle_t  can_handler;
 
 TaskHandle_t  voice_handler;
 TaskHandle_t AT_pars_handle;//AT指令分析任务句柄
+
+TaskHandle_t ota_task_handle;
+TaskHandle_t mqtt_handler;
+SemaphoreHandle_t ota_sem;
 
 QueueHandle_t can_rx_queue;
 QueueHandle_t mqtt_can_rx_queue;//服务器接收can消息
@@ -187,12 +194,14 @@ void StartDefaultTask(void *argument)
 //  {
 //     printf("AT_parse create failed!\r\n");
 //  }
-//	ret = xTaskCreate(MQTT_Task,"MQTT_Task",200,NULL,15,NULL);
+//	ret = xTaskCreate(MQTT_Task,"MQTT_Task",200,NULL,15,&mqtt_handler);
 //  if(ret != pdPASS)
 //  {
 //     printf("MQTT_Task create failed!\r\n");
 //  }
 	xTaskCreate(voice_task,"voice_task",128,NULL,14,&voice_handler);
+	ota_sem = xSemaphoreCreateBinary();
+	xTaskCreate(ota_task,"ota_task",256,NULL,20,&ota_task_handle);
 
 	can_rx_queue = xQueueCreate(5, sizeof(CanMsg_t));
   mqtt_can_rx_queue = xQueueCreate(5, sizeof(CanMsg_t)); //在can接收中断队列
@@ -385,7 +394,7 @@ void MQTT_Task(void*parm)
     mqtt_client_t *client = NULL;
     
     printf("\nwelcome to mqttclient test...\r\n");
-		HAL_UART_Receive_IT(&huart3,&g_uart3_rx_char, 1); //开串口中断
+		HAL_UART_Receive_DMA(&huart3,&g_uart3_rx_char, 1); //开dma中断
 	
     mqtt_log_init();
 
@@ -476,6 +485,35 @@ void MQTT_Task(void*parm)
 			// vTaskDelay(3000);
 		}
 }
+void ota_task(void *param)
+{
+    // 阻塞等待信号量，由 USART1 中断唤醒
+    xSemaphoreTake(ota_sem, portMAX_DELAY);
+    printf("OTA task woken up!\r\n");
+    // 被唤醒后，挂起所有其他任务
+    printf("OTA: suspending tasks...\r\n");
+    if (oled_handler)   vTaskSuspend(oled_handler);
+    if (AT_pars_handle) vTaskSuspend(AT_pars_handle);
+    if (mqtt_handler)   vTaskSuspend(mqtt_handler);
+    if (voice_handler)  vTaskSuspend(voice_handler);
+    if (can_handler)    vTaskSuspend(can_handler);
+    printf("OTA: all tasks suspended\r\n");
+
+    // 等待 100ms，让被挂起的任务完成当前操作
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // 初始化 OTA 模块
+    App_update_init();
+    printf("OTA: init done, starting state machine\r\n");
+
+    // 运行 OTA 状态机（1ms 轮询，中断驱动接收不会丢包）
+    while (1)
+    {
+        App_update_work();
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+}
+
 /**
  * @brief LVGL demo task: initializes LVGL and runs the widgets demo
  * @param pvParameters Not used

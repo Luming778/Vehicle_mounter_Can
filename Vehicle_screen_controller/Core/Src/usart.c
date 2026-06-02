@@ -19,6 +19,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+#include "app_update.h"
 
 /* USER CODE BEGIN 0 */
 #define	g_circle_buff_len	512           //串口3环形buff长度
@@ -27,6 +31,8 @@ static uint8_t g_uart2_rx_char[4];   //
 uint8_t g_uart3_rx_char;   //串口3接收数据变量
 circle_buf	g_circle_buff;        //串口3环形buff
 extern TaskHandle_t AT_pars_handle;//AT指令分析任务句柄
+extern SemaphoreHandle_t ota_sem;
+static uint8_t usart1_rx_buf[32];
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -59,7 +65,7 @@ void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
-
+  HAL_UARTEx_ReceiveToIdle_IT(&huart1, usart1_rx_buf, sizeof(usart1_rx_buf));
   /* USER CODE END USART1_Init 2 */
 
 }
@@ -120,8 +126,7 @@ void MX_USART3_UART_Init(void)
   }
   /* USER CODE BEGIN USART3_Init 2 */
   /*开dma传输*/
-//	HAL_Delay(1000);//等待系统稳定
-//  HAL_UART_Receive_DMA(&huart3,&g_uart3_rx_char, 1);
+  HAL_UART_Receive_DMA(&huart3,&g_uart3_rx_char, 1);
   /* USER CODE END USART3_Init 2 */
 
 }
@@ -310,6 +315,32 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+{
+    if (huart->Instance == USART1)
+    {
+        if (Size < sizeof(usart1_rx_buf))
+            usart1_rx_buf[Size] = '\0';
+        else
+            usart1_rx_buf[sizeof(usart1_rx_buf) - 1] = '\0';
+        printf("USART1 RX: %d bytes, data: [%s]\r\n", Size, usart1_rx_buf);
+        if (update_state == UPDATE_IDLE && strstr((char *)usart1_rx_buf, "update"))
+        {
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+            xSemaphoreGiveFromISR(ota_sem, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        }
+        HAL_UARTEx_ReceiveToIdle_IT(&huart1, usart1_rx_buf, sizeof(usart1_rx_buf));
+    }
+    else if (huart->Instance == USART2)
+    {
+        // 原有 voice 模块逻辑（保持不变）
+    }
+    else if (huart->Instance == USART3)
+    {
+        // 原有 ESP8266 逻辑（保持不变）
+    }
+}
 /* 接收中断(接收一个字节触发一次)函数 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -317,22 +348,23 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
   if(huart->Instance == USART2)
   {
+		printf("USART2 RX: %02X %02X %02X %02X\r\n", g_uart2_rx_char[0], g_uart2_rx_char[1], g_uart2_rx_char[2], g_uart2_rx_char[3]);
 		if(g_uart2_rx_char[0]==0x4A &&g_uart2_rx_char[1]==0x5F &&g_uart2_rx_char[3]==0x8B)
 		{
 		    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         xQueueSendFromISR(voice_rx_queue, &g_uart2_rx_char[2], &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 		}
-		
+
     HAL_UART_Receive_IT(&huart2,g_uart2_rx_char,4);
   }
 	else if(huart->Instance == USART3)
 	{
-		
+
 		circle_buf_write(&g_circle_buff,g_uart3_rx_char);//数据写进环形buf
 		vTaskNotifyGiveFromISR(AT_pars_handle,&xHigherPriorityTaskWoken);  //任务通知AT_pars()任务
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-		HAL_UART_Receive_IT(&huart3, &g_uart3_rx_char, 1);
+		HAL_UART_Receive_DMA(&huart3, &g_uart3_rx_char, 1);
 	}
 }
 
