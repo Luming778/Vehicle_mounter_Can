@@ -1,9 +1,0 @@
-car\salof.o: ..\Middlewares\MQTTclient\common\log\salof.c
-car\salof.o: ..\Middlewares\MQTTclient\common\log\salof.h
-car\salof.o: ..\Middlewares\MQTTclient\common\log\salof_defconfig.h
-car\salof.o: ..\Middlewares\MQTTclient\common\log\salof_config.h
-car\salof.o: ../Middlewares/MQTTclient/mqttclient/mqtt_config.h
-car\salof.o: ..\Middlewares\MQTTclient\common\log\format.h
-car\salof.o: E:\keil5\ARM\ARMCC\Bin\..\include\stdarg.h
-car\salof.o: ..\Middlewares\MQTTclient\common\log\fifo.h
-car\salof.o: E:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
