@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define W25Q128_CS_Pin GPIO_PIN_12
+#define W25Q128_CS_GPIO_Port GPIOB
 #define WIFI_TX_Pin GPIO_PIN_10
 #define WIFI_TX_GPIO_Port GPIOC
 #define WIFI_RX_Pin GPIO_PIN_11

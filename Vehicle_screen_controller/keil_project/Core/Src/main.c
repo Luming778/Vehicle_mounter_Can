@@ -20,6 +20,10 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "can.h"
+#include "crc.h"
+#include "dma.h"
+#include "i2c.h"
+#include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 #include "fsmc.h"
@@ -95,11 +99,15 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_CAN_Init();
   MX_USART3_UART_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_FSMC_Init();
+  MX_I2C1_Init();
+  MX_SPI2_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   
   OLED_Init();
@@ -190,8 +198,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM4)
   {
     HAL_IncTick();
-    /* Inform LVGL about a millisecond tick */
-    lv_tick_inc(1);
   }
   /* USER CODE BEGIN Callback 1 */
 
