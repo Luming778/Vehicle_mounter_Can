@@ -19,7 +19,8 @@
  */
 
 #include "atk_md0280_touch.h"
-
+#include "FreeRTOS.h"
+#include "task.h"
 #if (ATK_MD0280_USING_TOUCH != 0)
 
 #include "atk_md0280_touch_spi.h"

@@ -10,11 +10,19 @@ void App_bootloader_check_update(void)
 {
     printf("bootloader start\r\n");
     printf("check update\r\n");
+
+        if (HAL_I2C_IsDeviceReady(&hi2c1, W24C02_ADDR, 3, 5) != HAL_OK)
+    {
+        printf("boot flag: EEPROM not found on I2C bus!\r\n");
+        return;
+    }
     // 读取3个字节的数据
     uint8_t data[3];
     Int_w24c02_read_bytes(CHECK_UPDATE_ADDR, data, 3);
+	
     // 1. 校验秘钥是否正确  高8位在前
     uint16_t key = data[1] << 8 | data[2];
+		printf("key 0x%X\r\n",key);
     if (key != CHECK_KEY)
     {
         // 2. 秘钥不正确  不进行更新  重置秘钥

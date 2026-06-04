@@ -105,7 +105,35 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_FSMC_Init();
+
+  /* 强制复位 I2C1：bootloader 跳转后外设可能残留非默认状态，
+   * HAL_I2C_Init 无法完全恢复，需用 SWRST 硬件复位 */
+  __HAL_RCC_I2C1_CLK_ENABLE();
+  SET_BIT(I2C1->CR1, I2C_CR1_SWRST);
+  CLEAR_BIT(I2C1->CR1, I2C_CR1_SWRST);
   MX_I2C1_Init();
+  
+  /* ---- I2C 诊断：打印寄存器值和设备检测 ---- */
+  {
+      uint32_t pclk1 = HAL_RCC_GetPCLK1Freq();
+      printf("[I2C] PCLK1=%lu Hz | CR2=0x%04lX CCR=0x%04lX TRISE=0x%02lX SR1=0x%04lX SR2=0x%04lX\r\n",
+             pclk1,
+             I2C1->CR2, I2C1->CCR, I2C1->TRISE,
+             I2C1->SR1, I2C1->SR2);
+      printf("[I2C] GPIOB_CRL=0x%08lX ODR=0x%08lX IDR=0x%08lX | ENR_APB1=0x%08lX APB2=0x%08lX\r\n",
+             GPIOB->CRL, GPIOB->ODR, GPIOB->IDR,
+             RCC->APB1ENR, RCC->APB2ENR);
+      
+      HAL_StatusTypeDef s = HAL_I2C_IsDeviceReady(&hi2c1, 0xA0, 5, 10);
+      if (s == HAL_OK)
+          printf("[I2C] EEPROM detected OK\r\n");
+      else if (s == HAL_TIMEOUT)
+          printf("[I2C] EEPROM not responding (TIMEOUT)\r\n");
+      else
+          printf("[I2C] EEPROM error, status=%d\r\n", s);
+  }
+  /* ---- I2C 诊断结束 ---- */
+  
   MX_SPI2_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
@@ -129,8 +157,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    printf("hello world\r\n");
-    HAL_Delay(1000);
+
 
     /* USER CODE END WHILE */
 
@@ -198,8 +225,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM4)
   {
     HAL_IncTick();
+    
   }
   /* USER CODE BEGIN Callback 1 */
+    if (htim->Instance == TIM4)
+  {
+    /* Inform LVGL about a millisecond tick */
+    lv_tick_inc(1);
+  }
 
   /* USER CODE END Callback 1 */
 }

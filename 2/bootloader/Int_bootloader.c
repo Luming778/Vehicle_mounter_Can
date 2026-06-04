@@ -27,19 +27,15 @@ uint8_t Int_bootloader_jump_to_app(uint32_t app_start_addr)
         return 1;
     }
 
-    // 2. 注销boot loader程序
+    // 2. 注销boot loader程序：释放所有外设，避免影响 app 初始化
     NVIC_DisableIRQ(EXTI9_5_IRQn);
     NVIC_DisableIRQ(USART1_IRQn);
 
-    // 关闭systick
-    SysTick->CTRL = 0;
-    SysTick->LOAD = 0;
-    SysTick->VAL = 0;
+    /* 必须注销外设后再跳转，否则 app 侧 HAL_I2C_Init 等函数会因
+     * hi2c.State 非 RESET 状态而跳过完整初始化 */
+    HAL_DeInit();
 
-    // 2.1 关闭HAL库 注销掉外设的配置  不会注销内核
-    // HAL_DeInit();
-
-    // 2.1 关闭中断
+    // 关闭中断
     __disable_irq();
 
     // 2.2 设置堆栈指针

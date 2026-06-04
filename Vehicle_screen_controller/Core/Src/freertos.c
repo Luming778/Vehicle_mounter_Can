@@ -77,6 +77,8 @@ TaskHandle_t ota_task_handle;
 TaskHandle_t mqtt_handler;
 SemaphoreHandle_t ota_sem;
 
+TaskHandle_t lvgl_demo_handler;//lvgl_demo任务句柄
+
 QueueHandle_t can_rx_queue;
 QueueHandle_t mqtt_can_rx_queue;//服务器接收can消息
 QueueHandle_t voice_rx_queue; 
@@ -184,7 +186,7 @@ void StartDefaultTask(void *argument)
   // {
   //    printf("demo_run create failed!\r\n");
   // }
-  ret = xTaskCreate(lvgl_demo_task,"lvgl_demo",1024,NULL,14,NULL);
+  ret = xTaskCreate(lvgl_demo_task,"lvgl_demo",1024,NULL,14,&lvgl_demo_handler);
   if(ret != pdPASS)
   {
      printf("lvgl_demo_task create failed!\r\n");
@@ -497,6 +499,7 @@ void ota_task(void *param)
     if (mqtt_handler)   vTaskSuspend(mqtt_handler);
     if (voice_handler)  vTaskSuspend(voice_handler);
     if (can_handler)    vTaskSuspend(can_handler);
+	if (lvgl_demo_handler) vTaskSuspend(lvgl_demo_handler);
     printf("OTA: all tasks suspended\r\n");
 
     // 等待 100ms，让被挂起的任务完成当前操作
