@@ -363,7 +363,6 @@ void fsmc_deinit_for_i2c(void)
 
     /* 3. Disable FSMC peripheral clock */
     __HAL_RCC_FSMC_CLK_DISABLE();
-
 }
 
 /**

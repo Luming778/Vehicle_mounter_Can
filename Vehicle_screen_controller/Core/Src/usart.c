@@ -28,7 +28,7 @@
 #include "string.h"
 #define	g_circle_buff_len	512           //串口3环形buff长度
 static uint8_t g_rx_buf[g_circle_buff_len];//
-static uint8_t g_uart2_rx_char[4];   //
+uint8_t g_uart2_rx_char[4];   //
 uint8_t g_uart3_rx_char;   //串口3接收数据变量
 circle_buf	g_circle_buff;        //串口3环形buff
 extern TaskHandle_t AT_pars_handle;//AT指令分析任务句柄
@@ -66,6 +66,8 @@ void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
+	__HAL_UART_CLEAR_OREFLAG(&huart1);
+	__HAL_UART_CLEAR_IDLEFLAG(&huart1);
   HAL_UARTEx_ReceiveToIdle_IT(&huart1, usart1_rx_buf, sizeof(usart1_rx_buf));
   /* USER CODE END USART1_Init 2 */
 
@@ -95,8 +97,7 @@ void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
-  /*开中断*/
-  HAL_UART_Receive_IT(&huart2,g_uart2_rx_char, 4);
+
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -355,7 +356,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         xQueueSendFromISR(voice_rx_queue, &g_uart2_rx_char[2], &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 		}
-
+    __HAL_UART_CLEAR_OREFLAG(&huart2);
+	 __HAL_UART_CLEAR_IDLEFLAG(&huart2);
     HAL_UART_Receive_IT(&huart2,g_uart2_rx_char,4);
   }
 	else if(huart->Instance == USART3)

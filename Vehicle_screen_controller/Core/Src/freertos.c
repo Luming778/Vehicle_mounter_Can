@@ -83,6 +83,7 @@ QueueHandle_t can_rx_queue;
 QueueHandle_t mqtt_can_rx_queue;//服务器接收can消息
 QueueHandle_t voice_rx_queue; 
 extern uint8_t g_uart3_rx_char;   //串口3接收数据变量
+extern uint8_t g_uart2_rx_char[4];//串口2接收数据变量
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -317,6 +318,9 @@ void voice_task(void * pvParameters ) //can_tx
 	uint16_t stdID2 = 0X7bf;
 	uint8_t pdata[3]={0xaa,0x11,0};
 	uint8_t data=0;
+	  /*开中断*/
+  __HAL_UART_CLEAR_OREFLAG(&huart2);
+  HAL_UART_Receive_IT(&huart2,g_uart2_rx_char, 4);
 	while(1)
 	{	
 		while((xQueueReceive( voice_rx_queue,&data ,portMAX_DELAY) != pdPASS));
@@ -391,6 +395,8 @@ void MQTT_Task(void*parm)
     mqtt_client_t *client = NULL;
     
     printf("\nwelcome to mqttclient test...\r\n");
+		
+
 		HAL_UART_Receive_DMA(&huart3,&g_uart3_rx_char, 1); //开dma中断
 	
     mqtt_log_init();
@@ -499,7 +505,12 @@ void ota_task(void *param)
     if (can_handler)    vTaskSuspend(can_handler);
 	if (lvgl_demo_handler) vTaskSuspend(lvgl_demo_handler);
     printf("OTA: all tasks suspended\r\n");
-	fsmc_deinit_for_i2c(); // 释放 FSMC 总线资源，确保 OTA 更新过程中 I2C 不会冲突
+	/* 释放 FSMC 总线资源，确保 OTA 更新过程中 I2C 不会冲突 */
+	fsmc_deinit_for_i2c(); 
+	/* 挂起其他任务中断*/
+	HAL_NVIC_DisableIRQ(USART2_IRQn);
+	HAL_NVIC_DisableIRQ(USART3_IRQn);
+	
     // 等待 100ms，让被挂起的任务完成当前操作
     vTaskDelay(pdMS_TO_TICKS(100));
 	

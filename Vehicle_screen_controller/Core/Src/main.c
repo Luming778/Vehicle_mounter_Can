@@ -26,7 +26,7 @@
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
-#include "fsmc.h"
+//#include "fsmc.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -78,7 +78,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	/* __enable_irq() 不可放在此处——USART2/CAN ISR 会访问尚未创建的 FreeRTOS 队列/信号量导致 HardFault */
+	/* __enable_irq()  */
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/

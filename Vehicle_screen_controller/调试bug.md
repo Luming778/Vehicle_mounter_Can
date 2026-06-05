@@ -138,11 +138,32 @@ MX_I2C1_Init();  /* ---- I2C 诊断：打印寄存器值和设备检测 ---- */
 
 3.尝试注释MX_FSMC_Init();后发现IIC可以使用，定位到FSMC外设使用
 
-
 ###### 解决：
 
+由于只有OTA升级中用到了IIC，所以在进入OTA升级任务后将LCD屏用的FSMC外设时钟关闭
 
+```
+/* 释放 FSMC 总线资源，确保 OTA 更新过程中 I2C 不会冲突 */
+	fsmc_deinit_for_i2c(); 
+void fsmc_deinit_for_i2c(void)
+{
+    /* 1. Disable FSMC Bank4 (LCD uses NE4 = Bank4) */
+    /*FSMC 控制器 "Bank4 不再需要工作"，FSMC 状态机停止参与 AHB 总线仲裁 */
+    FSMC_NORSRAM_DEVICE->BTCR[3] &= ~FSMC_BCRx_MBKEN;
 
+    /* 2. Reset FSMC GPIO pins to default input state */
+//    HAL_GPIO_DeInit(GPIOG, GPIO_PIN_0 | GPIO_PIN_12);
+//    HAL_GPIO_DeInit(GPIOE, GPIO_PIN_7  | GPIO_PIN_8  | GPIO_PIN_9  | GPIO_PIN_10 |
+//                            GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 |
+//                            GPIO_PIN_15);
+//    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_0  | GPIO_PIN_1  | GPIO_PIN_4  | GPIO_PIN_5  |
+//                            GPIO_PIN_8  | GPIO_PIN_9  | GPIO_PIN_10 | GPIO_PIN_14 |
+//                            GPIO_PIN_15);
+
+    /* 3. Disable FSMC peripheral clock */
+    __HAL_RCC_FSMC_CLK_DISABLE();
+}
+```
 
 ### 问题六：USART2接收到数据后进入Default_Handler异常
 
