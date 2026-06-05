@@ -181,26 +181,21 @@ void StartDefaultTask(void *argument)
   {
      printf("can_task create failed!\r\n");
   }
-  // ret = xTaskCreate(demo_run,"demo_run",1000,NULL,14,NULL);
-  // if(ret != pdPASS)
-  // {
-  //    printf("demo_run create failed!\r\n");
-  // }
   ret = xTaskCreate(lvgl_demo_task,"lvgl_demo",1024,NULL,14,&lvgl_demo_handler);
   if(ret != pdPASS)
   {
      printf("lvgl_demo_task create failed!\r\n");
   }
-//  ret = xTaskCreate(AT_Parse,"AT_parse",68,NULL,15,&AT_pars_handle);
-//  if(ret != pdPASS)
-//  {
-//     printf("AT_parse create failed!\r\n");
-//  }
-//	ret = xTaskCreate(MQTT_Task,"MQTT_Task",200,NULL,15,&mqtt_handler);
-//  if(ret != pdPASS)
-//  {
-//     printf("MQTT_Task create failed!\r\n");
-//  }
+  ret = xTaskCreate(AT_Parse,"AT_parse",68,NULL,15,&AT_pars_handle);
+  if(ret != pdPASS)
+  {
+     printf("AT_parse create failed!\r\n");
+  }
+	ret = xTaskCreate(MQTT_Task,"MQTT_Task",200,NULL,15,&mqtt_handler);
+  if(ret != pdPASS)
+  {
+     printf("MQTT_Task create failed!\r\n");
+  }
 	xTaskCreate(voice_task,"voice_task",128,NULL,14,&voice_handler);
 	ota_sem = xSemaphoreCreateBinary();
 	xTaskCreate(ota_task,"ota_task",256,NULL,20,&ota_task_handle);
@@ -295,7 +290,7 @@ void oled_task(void * pvParameters )  //can_rx
 
 void can_task(void * pvParameters )
 {
-  printf("send test ...\n");
+  printf("send test ...\r\n");
 	// 发送报文
 //	uint32_t stdID = 0x77f;
 //	uint16_t stdID2 =0x768;
@@ -403,7 +398,7 @@ void MQTT_Task(void*parm)
     client = mqtt_lease();
 	mqtt_set_port(client, "1883");  //修改服务器端口
 	
-    mqtt_set_host(client, "10.60.14.76");  //修改服务器IP
+    mqtt_set_host(client, "192.168.101.34");  //修改服务器IP
     mqtt_set_client_id(client, random_string(10));
     mqtt_set_user_name(client, random_string(10));
     mqtt_set_password(client, random_string(10));
@@ -487,6 +482,9 @@ void MQTT_Task(void*parm)
 			// vTaskDelay(3000);
 		}
 }
+
+
+
 void ota_task(void *param)
 {
     // 阻塞等待信号量，由 USART1 中断唤醒
@@ -501,10 +499,10 @@ void ota_task(void *param)
     if (can_handler)    vTaskSuspend(can_handler);
 	if (lvgl_demo_handler) vTaskSuspend(lvgl_demo_handler);
     printf("OTA: all tasks suspended\r\n");
-
+	fsmc_deinit_for_i2c(); // 释放 FSMC 总线资源，确保 OTA 更新过程中 I2C 不会冲突
     // 等待 100ms，让被挂起的任务完成当前操作
     vTaskDelay(pdMS_TO_TICKS(100));
-
+	
     // 初始化 OTA 模块
     App_update_init();
     printf("OTA: init done, starting state machine\r\n");
@@ -516,6 +514,8 @@ void ota_task(void *param)
         vTaskDelay(pdMS_TO_TICKS(1));
     }
 }
+
+
 
 /**
  * @brief LVGL demo task: initializes LVGL and runs the widgets demo

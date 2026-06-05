@@ -1,64 +1,78 @@
 /**
  ****************************************************************************************************
  * @file        atk_md0280_touch.c
- * @author      ÕıµãÔ­×ÓÍÅ¶Ó(ALIENTEK)
+ * @author      æ­£ç‚¹åŸå­å›¢é˜Ÿ(ALIENTEK)
  * @version     V1.0
  * @date        2022-06-21
- * @brief       ATK-MD0280Ä£¿é´¥ÃşÇı¶¯´úÂë
- * @license     Copyright (c) 2020-2032, ¹ãÖİÊĞĞÇÒíµç×Ó¿Æ¼¼ÓĞÏŞ¹«Ë¾
+ * @brief       ATK-MD0280æ¨¡å—è§¦æ‘¸é©±åŠ¨ä»£ç 
+ * @license     Copyright (c) 2020-2032, å¹¿å·å¸‚æ˜Ÿç¿¼ç”µå­ç§‘æŠ€æœ‰é™å…¬å¸
  ****************************************************************************************************
  * @attention
  *
- * ÊµÑéÆ½Ì¨:ÕıµãÔ­×Ó STM32F103¿ª·¢°å
- * ÔÚÏßÊÓÆµ:www.yuanzige.com
- * ¼¼ÊõÂÛÌ³:www.openedv.com
- * ¹«Ë¾ÍøÖ·:www.alientek.com
- * ¹ºÂòµØÖ·:openedv.taobao.com
+ * å®éªŒå¹³å°:æ­£ç‚¹åŸå­ STM32F103å¼€å‘æ¿
+ * åœ¨çº¿è§†é¢‘:www.yuanzige.com
+ * æŠ€æœ¯è®ºå›:www.openedv.com
+ * å…¬å¸ç½‘å€:www.alientek.com
+ * è´­ä¹°åœ°å€:openedv.taobao.com
  *
  ****************************************************************************************************
  */
 
 #include "atk_md0280_touch.h"
-#include "FreeRTOS.h"
-#include "task.h"
+// #include "FreeRTOS.h"
+// #include "task.h"
 #if (ATK_MD0280_USING_TOUCH != 0)
 
 #include "atk_md0280_touch_spi.h"
-#include <stdlib.h>
+// #include <stdlib.h>
+// #include <stdio.h>
 
-
-/* »ñÈ¡X/Y×ø±êADCÖµµÄÃüÁî */
+/* è·å–X/Yåæ ‡ADCå€¼çš„å‘½ä»¤ */
 #define ATK_MD0280_TOUCH_CMD_X  0xD0
 #define ATK_MD0280_TOUCH_CMD_Y  0x90
 
-/* ATK-MD0280Ä£¿é´¥Ãş×´Ì¬Êı¾İ½á¹¹Ìå */
+/*
+ * è§¦æ‘¸å±æ ¡å‡†å‚æ•°ï¼ˆå›ºåŒ–å€¼ï¼Œå…å»æ¯æ¬¡å¼€æœºæ‰‹åŠ¨æ ¡å‡†ï¼‰
+ *
+ * è·å–æ–¹å¼ï¼šä¿ç•™åŸ 5 ç‚¹æ ¡å‡†ä»£ç ï¼Œè·‘é€šåè®°å½•ä»¥ä¸‹ 4 ä¸ªå€¼å¡«å…¥å³å¯ã€‚
+ *   - fac.x / fac.y   â†’ æ¯ LCD åƒç´ å¯¹åº”çš„ ADC è®¡æ•°
+ *   - center.x / center.y â†’ å±å¹•ä¸­å¿ƒç‚¹ (LCD_W/2, LCD_H/2) å¯¹åº”çš„ ADC å€¼
+ *
+ * ä»¥ä¸‹ä¸ºå ä½å€¼ï¼Œè¯·æ ¹æ®å®æµ‹æ›¿æ¢ï¼
+ */
+#define ATK_MD0280_TOUCH_FAC_X      13.5f  /* TODO: æ›¿æ¢ä¸ºå®æµ‹ fac.x */
+#define ATK_MD0280_TOUCH_FAC_Y      10.5f  /* TODO: æ›¿æ¢ä¸ºå®æµ‹ fac.y */
+#define ATK_MD0280_TOUCH_CENTER_X   2212     /* TODO: æ›¿æ¢ä¸ºå®æµ‹ center.x */
+#define ATK_MD0280_TOUCH_CENTER_Y   2150     /* TODO: æ›¿æ¢ä¸ºå®æµ‹ center.y */
+
+/* ATK-MD0280æ¨¡å—è§¦æ‘¸çŠ¶æ€æ•°æ®ç»“æ„ä½“ */
 static struct
 {
     struct
     {
         float x;
         float y;
-    } fac;          /* Ğ£×¼±ÈÀıÒò×Ó */
+    } fac;          /* æ ¡å‡†æ¯”ä¾‹å› å­ */
     struct
     {
         uint16_t x;
         uint16_t y;
-    } center;       /* ÖĞĞÄ×ø±êµÄADCÖµ */
+    } center;       /* ä¸­å¿ƒåæ ‡çš„ADCå€¼ */
 } g_atk_md0280_touch_sta = {0};
 
 /**
- * @brief       ATK-MD0280Ä£¿é´¥ÃşÓ²¼ş³õÊ¼»¯
- * @param       ÎŞ
- * @retval      ÎŞ
+ * @brief       ATK-MD0280æ¨¡å—è§¦æ‘¸ç¡¬ä»¶åˆå§‹åŒ–
+ * @param       æ— 
+ * @retval      æ— 
  */
 static void atk_md0280_touch_hw_init(void)
 {
     GPIO_InitTypeDef gpio_init_struct = {0};
     
-    /* Ê¹ÄÜÊ±ÖÓ */
+    /* ä½¿èƒ½æ—¶é’Ÿ */
     ATK_MD0280_TOUCH_PEN_GPIO_CLK_ENABLE();
     
-    /* ³õÊ¼»¯PENÒı½Å */
+    /* åˆå§‹åŒ–PENå¼•è„š */
     gpio_init_struct.Pin    = ATK_MD0280_TOUCH_PEN_GPIO_PIN;
     gpio_init_struct.Mode   = GPIO_MODE_INPUT;
     gpio_init_struct.Pull   = GPIO_PULLUP;
@@ -67,13 +81,13 @@ static void atk_md0280_touch_hw_init(void)
 }
 
 /**
- * @brief       »ñÈ¡ATK-MD0280Ä£¿é´¥ÃşµÄX/YÖáADCÖµ
- * @note        Á¬Ğø¶ÁÈ¡ATK_MD0280_TOUCH_READ_TIMES´Î£¬
- *              ²¢¶ªÆú×î´ó×îĞ¡Öµ¸÷ATK_MD0280_TOUCH_READ_DISCARD¸ö£¬
- *              ×îºó·µ»ØÊ£ÓàµÄ¾ùÖµ
- * @param       cmd: ATK_MD0280_TOUCH_CMD_X: »ñÈ¡XÖáµÄADCÖµ£¨LCDÏÔÊ¾ÄÚÈİÎ´Ğı×ª£©
- *                   ATK_MD0280_TOUCH_CMD_Y: »ñÈ¡YÖáµÄADCÖµ£¨LCDÏÔÊ¾ÄÚÈİÎ´Ğı×ª£©
- * @retval      »ñÈ¡µ½µÄ´¥ÃşADCÖµ
+ * @brief       è·å–ATK-MD0280æ¨¡å—è§¦æ‘¸çš„X/Yè½´ADCå€¼
+ * @note        è¿ç»­è¯»å–ATK_MD0280_TOUCH_READ_TIMESæ¬¡ï¼Œ
+ *              å¹¶ä¸¢å¼ƒæœ€å¤§æœ€å°å€¼å„ATK_MD0280_TOUCH_READ_DISCARDä¸ªï¼Œ
+ *              æœ€åè¿”å›å‰©ä½™çš„å‡å€¼
+ * @param       cmd: ATK_MD0280_TOUCH_CMD_X: è·å–Xè½´çš„ADCå€¼ï¼ˆLCDæ˜¾ç¤ºå†…å®¹æœªæ—‹è½¬ï¼‰
+ *                   ATK_MD0280_TOUCH_CMD_Y: è·å–Yè½´çš„ADCå€¼ï¼ˆLCDæ˜¾ç¤ºå†…å®¹æœªæ—‹è½¬ï¼‰
+ * @retval      è·å–åˆ°çš„è§¦æ‘¸ADCå€¼
  */
 static uint16_t atk_md0280_touch_get_adc(uint8_t cmd)
 {
@@ -110,12 +124,12 @@ static uint16_t atk_md0280_touch_get_adc(uint8_t cmd)
 }
 
 /**
- * @brief       »ñÈ¡ATK-MD0280Ä£¿é´¥ÃşµÄX/YÖáADCÖµ
- * @note        Á¬Ğø¶ÁÈ¡Á½´Î£¬Ö±ÖÁÁ½´Î¶ÁÈ¡µÄ²åÖµĞ¡ÓÚATK_MD0280_TOUCH_READ_RANGE£¬
- *              ºó·µ»Ø¾ùÖµ
- * @param       cmd: ATK_MD0280_TOUCH_CMD_X: »ñÈ¡XÖáµÄADCÖµ£¨LCDÏÔÊ¾ÄÚÈİÎ´Ğı×ª£©
- *                   ATK_MD0280_TOUCH_CMD_Y: »ñÈ¡YÖáµÄADCÖµ£¨LCDÏÔÊ¾ÄÚÈİÎ´Ğı×ª£©
- * @retval      »ñÈ¡µ½µÄ´¥ÃşADCÖµ
+ * @brief       è·å–ATK-MD0280æ¨¡å—è§¦æ‘¸çš„X/Yè½´ADCå€¼
+ * @note        è¿ç»­è¯»å–ä¸¤æ¬¡ï¼Œç›´è‡³ä¸¤æ¬¡è¯»å–çš„æ’å€¼å°äºATK_MD0280_TOUCH_READ_RANGEï¼Œ
+ *              åè¿”å›å‡å€¼
+ * @param       cmd: ATK_MD0280_TOUCH_CMD_X: è·å–Xè½´çš„ADCå€¼ï¼ˆLCDæ˜¾ç¤ºå†…å®¹æœªæ—‹è½¬ï¼‰
+ *                   ATK_MD0280_TOUCH_CMD_Y: è·å–Yè½´çš„ADCå€¼ï¼ˆLCDæ˜¾ç¤ºå†…å®¹æœªæ—‹è½¬ï¼‰
+ * @retval      è·å–åˆ°çš„è§¦æ‘¸ADCå€¼
  */
 static uint16_t atk_md0280_touch_get_adc2(uint8_t cmd)
 {
@@ -139,159 +153,168 @@ static uint16_t atk_md0280_touch_get_adc2(uint8_t cmd)
     return ((dat1 + dat2) >> 1);
 }
 
-/**
- * @brief       »æ»­ATK-MD0280Ä£¿é´¥ÃşĞ£×¼´¥Ãşµã
- * @param       x    : ´ı»­Ğ£×¼´¥ÃşµãµÄX×ø±ê
- *              y    : ´ı»­Ğ£×¼´¥ÃşµãµÄY×ø±ê
- *              color: ´ı»­Ğ£×¼´¥ÃşµãµÄÑÕÉ«
- * @retval      ÎŞ
- */
-static void atk_md0280_touch_draw_touch_point(uint16_t x, uint16_t y, uint16_t color)
-{
-    atk_md0280_draw_line(x - 12, y, x + 13, y, color);
-    atk_md0280_draw_line(x, y - 12, x, y + 13, color);
-    atk_md0280_draw_point(x + 1, y + 1, color);
-    atk_md0280_draw_point(x - 1, y + 1, color);
-    atk_md0280_draw_point(x + 1, y - 1, color);
-    atk_md0280_draw_point(x - 1, y - 1, color);
-    atk_md0280_draw_circle(x, y, 6, color);
-}
+// /**
+//  * @brief       ç»˜ç”»ATK-MD0280æ¨¡å—è§¦æ‘¸æ ¡å‡†è§¦æ‘¸ç‚¹
+//  * @param       x    : å¾…ç”»æ ¡å‡†è§¦æ‘¸ç‚¹çš„Xåæ ‡
+//  *              y    : å¾…ç”»æ ¡å‡†è§¦æ‘¸ç‚¹çš„Yåæ ‡
+//  *              color: å¾…ç”»æ ¡å‡†è§¦æ‘¸ç‚¹çš„é¢œè‰²
+//  * @retval      æ— 
+//  */
+// static void atk_md0280_touch_draw_touch_point(uint16_t x, uint16_t y, uint16_t color)
+// {
+//     atk_md0280_draw_line(x - 12, y, x + 13, y, color);
+//     atk_md0280_draw_line(x, y - 12, x, y + 13, color);
+//     atk_md0280_draw_point(x + 1, y + 1, color);
+//     atk_md0280_draw_point(x - 1, y + 1, color);
+//     atk_md0280_draw_point(x + 1, y - 1, color);
+//     atk_md0280_draw_point(x - 1, y - 1, color);
+//     atk_md0280_draw_circle(x, y, 6, color);
+// }
+
+// /**
+//  * @brief       ATK-MD0280æ¨¡å—è§¦æ‘¸æ ¡å‡†
+//  * @param       æ— 
+//  * @retval      æ— 
+//  */
+// static void atk_md0280_touch_calibration(void)
+// {
+//     struct
+//     {
+//         uint16_t x;
+//         uint16_t y;
+//     } point[5];
+//     uint8_t point_index;
+//     int16_t d1, d2, d3, d4;
+//     double x_fac, y_fac;
+    
+//     atk_md0280_clear(ATK_MD0280_WHITE);
+//     atk_md0280_show_string( 40,
+//                             40,
+//                             ATK_MD0280_LCD_WIDTH - 80,
+//                             ATK_MD0280_LCD_HEIGHT - 80,
+//                             "Please use the stylus click the cross on the screen.The cross will always move until the screen adjustment is completed.",
+//                             ATK_MD0280_LCD_FONT_16,
+//                             ATK_MD0280_RED);
+    
+//     while (1)
+//     {
+//         for (point_index=0; point_index<5 + 1; point_index++)
+//         {
+//             switch (point_index)
+//             {
+//                 case 0:
+//                 {
+//                     atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() >> 1, atk_md0280_get_lcd_height() >> 1, ATK_MD0280_WHITE);
+//                     atk_md0280_touch_draw_touch_point(20, 20, ATK_MD0280_RED);
+//                     break;
+//                 }
+//                 case 1:
+//                 {
+//                     atk_md0280_touch_draw_touch_point(20, 20, ATK_MD0280_WHITE);
+//                     atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() - 20, 20, ATK_MD0280_RED);
+//                     break;
+//                 }
+//                 case 2:
+//                 {
+//                     atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() - 20, 20, ATK_MD0280_WHITE);
+//                     atk_md0280_touch_draw_touch_point(20, atk_md0280_get_lcd_height() - 20, ATK_MD0280_RED);
+//                     break;
+//                 }
+//                 case 3:
+//                 {
+//                     atk_md0280_touch_draw_touch_point(20, atk_md0280_get_lcd_height() - 20, ATK_MD0280_WHITE);
+//                     atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() - 20, atk_md0280_get_lcd_height() - 20, ATK_MD0280_RED);
+//                     break;
+//                 }
+//                 case 4:
+//                 {
+//                     atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() - 20, atk_md0280_get_lcd_height() - 20, ATK_MD0280_WHITE);
+//                     atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() >> 1, atk_md0280_get_lcd_height() >> 1, ATK_MD0280_RED);
+//                     break;
+//                 }
+//                 case 5:
+//                 {
+//                     d1 = point[1].x - point[0].x;
+//                     d3 = point[3].x - point[2].x;
+//                     d2 = point[3].y - point[1].y;
+//                     d4 = point[2].y - point[0].y;
+                    
+//                     x_fac = (double)d1 / d3;
+//                     y_fac = (double)d2 / d4;
+                    
+//                     if (x_fac < 0)
+//                     {
+//                         x_fac = -x_fac;
+//                     }
+//                     if (y_fac < 0)
+//                     {
+//                         y_fac = -y_fac;
+//                     }
+                    
+//                     if (    x_fac < 0.95 || x_fac > 1.05 || y_fac < 0.95 || y_fac > 1.05 ||
+//                             abs(d1) > 4095 || abs(d2) > 4095 || abs(d3) > 4095 || abs(d4) > 4095 ||
+//                             abs(d1) == 0 || abs(d2) == 0 || abs(d3) == 0 || abs(d4) == 0)
+//                     {
+//                         break;
+//                     }
+                    
+//                     g_atk_md0280_touch_sta.fac.x = (float)(d1 + d3) / ((atk_md0280_get_lcd_width() - 40) << 1);
+//                     g_atk_md0280_touch_sta.fac.y = (float)(d2 + d4) / ((atk_md0280_get_lcd_height() - 40) << 1);
+                    
+//                     g_atk_md0280_touch_sta.center.x = point[4].x;
+//                     g_atk_md0280_touch_sta.center.y = point[4].y;
+                    
+//                     atk_md0280_clear(ATK_MD0280_WHITE);
+//                     atk_md0280_show_string( 30,
+//                                             100,
+//                                             atk_md0280_get_lcd_width(),
+//                                             atk_md0280_get_lcd_height(),
+//                                             "Touch Screen Adjust OK!",
+//                                             ATK_MD0280_LCD_FONT_16,
+//                                             ATK_MD0280_BLUE);
+//                     vTaskDelay(1000);
+//                     atk_md0280_clear(ATK_MD0280_WHITE);
+//                     printf("fac.x=%.4f fac.y=%.4f center.x=%d center.y=%d\r\n",
+//        g_atk_md0280_touch_sta.fac.x, g_atk_md0280_touch_sta.fac.y,
+//        g_atk_md0280_touch_sta.center.x, g_atk_md0280_touch_sta.center.y);
+
+//                     return;
+//                 }
+//             }
+//             vTaskDelay(200);
+//             while (ATK_MD0280_TOUCH_READ_PEN() != 0);
+//             point[point_index].x = atk_md0280_touch_get_adc2(ATK_MD0280_TOUCH_CMD_X);
+//             point[point_index].y = atk_md0280_touch_get_adc2(ATK_MD0280_TOUCH_CMD_Y);
+//             while (ATK_MD0280_TOUCH_READ_PEN() == 0);
+//         }
+//     }
+// }
 
 /**
- * @brief       ATK-MD0280Ä£¿é´¥ÃşĞ£×¼
- * @param       ÎŞ
- * @retval      ÎŞ
- */
-static void atk_md0280_touch_calibration(void)
-{
-    struct
-    {
-        uint16_t x;
-        uint16_t y;
-    } point[5];
-    uint8_t point_index;
-    int16_t d1, d2, d3, d4;
-    double x_fac, y_fac;
-    
-    atk_md0280_clear(ATK_MD0280_WHITE);
-    atk_md0280_show_string( 40,
-                            40,
-                            ATK_MD0280_LCD_WIDTH - 80,
-                            ATK_MD0280_LCD_HEIGHT - 80,
-                            "Please use the stylus click the cross on the screen.The cross will always move until the screen adjustment is completed.",
-                            ATK_MD0280_LCD_FONT_16,
-                            ATK_MD0280_RED);
-    
-    while (1)
-    {
-        for (point_index=0; point_index<5 + 1; point_index++)
-        {
-            switch (point_index)
-            {
-                case 0:
-                {
-                    atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() >> 1, atk_md0280_get_lcd_height() >> 1, ATK_MD0280_WHITE);
-                    atk_md0280_touch_draw_touch_point(20, 20, ATK_MD0280_RED);
-                    break;
-                }
-                case 1:
-                {
-                    atk_md0280_touch_draw_touch_point(20, 20, ATK_MD0280_WHITE);
-                    atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() - 20, 20, ATK_MD0280_RED);
-                    break;
-                }
-                case 2:
-                {
-                    atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() - 20, 20, ATK_MD0280_WHITE);
-                    atk_md0280_touch_draw_touch_point(20, atk_md0280_get_lcd_height() - 20, ATK_MD0280_RED);
-                    break;
-                }
-                case 3:
-                {
-                    atk_md0280_touch_draw_touch_point(20, atk_md0280_get_lcd_height() - 20, ATK_MD0280_WHITE);
-                    atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() - 20, atk_md0280_get_lcd_height() - 20, ATK_MD0280_RED);
-                    break;
-                }
-                case 4:
-                {
-                    atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() - 20, atk_md0280_get_lcd_height() - 20, ATK_MD0280_WHITE);
-                    atk_md0280_touch_draw_touch_point(atk_md0280_get_lcd_width() >> 1, atk_md0280_get_lcd_height() >> 1, ATK_MD0280_RED);
-                    break;
-                }
-                case 5:
-                {
-                    d1 = point[1].x - point[0].x;
-                    d3 = point[3].x - point[2].x;
-                    d2 = point[3].y - point[1].y;
-                    d4 = point[2].y - point[0].y;
-                    
-                    x_fac = (double)d1 / d3;
-                    y_fac = (double)d2 / d4;
-                    
-                    if (x_fac < 0)
-                    {
-                        x_fac = -x_fac;
-                    }
-                    if (y_fac < 0)
-                    {
-                        y_fac = -y_fac;
-                    }
-                    
-                    if (    x_fac < 0.95 || x_fac > 1.05 || y_fac < 0.95 || y_fac > 1.05 ||
-                            abs(d1) > 4095 || abs(d2) > 4095 || abs(d3) > 4095 || abs(d4) > 4095 ||
-                            abs(d1) == 0 || abs(d2) == 0 || abs(d3) == 0 || abs(d4) == 0)
-                    {
-                        break;
-                    }
-                    
-                    g_atk_md0280_touch_sta.fac.x = (float)(d1 + d3) / ((atk_md0280_get_lcd_width() - 40) << 1);
-                    g_atk_md0280_touch_sta.fac.y = (float)(d2 + d4) / ((atk_md0280_get_lcd_height() - 40) << 1);
-                    
-                    g_atk_md0280_touch_sta.center.x = point[4].x;
-                    g_atk_md0280_touch_sta.center.y = point[4].y;
-                    
-                    atk_md0280_clear(ATK_MD0280_WHITE);
-                    atk_md0280_show_string( 30,
-                                            100,
-                                            atk_md0280_get_lcd_width(),
-                                            atk_md0280_get_lcd_height(),
-                                            "Touch Screen Adjust OK!",
-                                            ATK_MD0280_LCD_FONT_16,
-                                            ATK_MD0280_BLUE);
-                    vTaskDelay(1000);
-                    atk_md0280_clear(ATK_MD0280_WHITE);
-                    
-                    return;
-                }
-            }
-            vTaskDelay(200);
-            while (ATK_MD0280_TOUCH_READ_PEN() != 0);
-            point[point_index].x = atk_md0280_touch_get_adc2(ATK_MD0280_TOUCH_CMD_X);
-            point[point_index].y = atk_md0280_touch_get_adc2(ATK_MD0280_TOUCH_CMD_Y);
-            while (ATK_MD0280_TOUCH_READ_PEN() == 0);
-        }
-    }
-}
-
-/**
- * @brief       ATK-MD0280Ä£¿é´¥Ãş³õÊ¼»¯
- * @param       ÎŞ
- * @retval      ÎŞ
+ * @brief       ATK-MD0280æ¨¡å—è§¦æ‘¸åˆå§‹åŒ–
+ * @param       æ— 
+ * @retval      æ— 
  */
 void atk_md0280_touch_init(void)
 {
     atk_md0280_touch_hw_init();
     atk_md0280_touch_spi_init();
-    atk_md0280_touch_calibration();
+    
+    /*è§¦æ‘¸å±æ ¡å‡†å‚æ•°ï¼ˆå›ºåŒ–å€¼ï¼Œå…å»æ¯æ¬¡å¼€æœºæ‰‹åŠ¨æ ¡å‡†ï¼‰*/
+    g_atk_md0280_touch_sta.fac.x    = ATK_MD0280_TOUCH_FAC_X;
+    g_atk_md0280_touch_sta.fac.y    = ATK_MD0280_TOUCH_FAC_Y;
+    g_atk_md0280_touch_sta.center.x = ATK_MD0280_TOUCH_CENTER_X;
+    g_atk_md0280_touch_sta.center.y = ATK_MD0280_TOUCH_CENTER_Y;
+
 }
 
 /**
- * @brief       ATK-MD0280Ä£¿é´¥ÃşÉ¨Ãè
- * @param       x: É¨Ãèµ½´¥ÃşµÄX×ø±ê
- *              y: É¨Ãèµ½´¥ÃşµÄY×ø±ê
- * @retval      ATK_MD0280_TOUCH_EOK  : É¨Ãèµ½ÓĞĞ§µÄ´¥Ãş
- *              ATK_MD0280_TOUCH_ERROR: ´¥Ãş×ø±êÎŞĞ§
- *              ATK_MD0280_TOUCH_EMPTY: Î´É¨Ãèµ½ÓĞĞ§µÄ´¥Ãş
+ * @brief       ATK-MD0280æ¨¡å—è§¦æ‘¸æ‰«æ
+ * @param       x: æ‰«æåˆ°è§¦æ‘¸çš„Xåæ ‡
+ *              y: æ‰«æåˆ°è§¦æ‘¸çš„Yåæ ‡
+ * @retval      ATK_MD0280_TOUCH_EOK  : æ‰«æåˆ°æœ‰æ•ˆçš„è§¦æ‘¸
+ *              ATK_MD0280_TOUCH_ERROR: è§¦æ‘¸åæ ‡æ— æ•ˆ
+ *              ATK_MD0280_TOUCH_EMPTY: æœªæ‰«æåˆ°æœ‰æ•ˆçš„è§¦æ‘¸
  */
 uint8_t atk_md0280_touch_scan(uint16_t *x, uint16_t *y)
 {

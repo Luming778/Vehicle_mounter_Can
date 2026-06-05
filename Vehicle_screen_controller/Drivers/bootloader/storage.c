@@ -43,41 +43,10 @@ void storage_set_boot_flag(void)
     uint8_t buf[3] = {0};
     uint8_t retry;
     
-    /* 写前诊断：检测 EEPROM 是否在线 */
-    if (HAL_I2C_IsDeviceReady(&hi2c1, W24C02_ADDR, 3, 5) != HAL_OK)
-    {
-        printf("boot flag: EEPROM not found on I2C bus!\r\n");
-        return;
-    }
-    
     buf[0] = STORAGE_BOOT_UPDATE;
     buf[1] = (STORAGE_CHECK_KEY >> 8) & 0xFF;
     buf[2] = STORAGE_CHECK_KEY & 0xFF;
     
     storage_adapter_write_eeprom(STORAGE_BOOT_FLAG_ADDR, buf, 3);
     
-    /* EEPROM 写周期 ≤5ms，延时 10ms 确保写入完成 */
-    HAL_Delay(10);
-    
-    /* 回读校验，最多重试 3 次，失败时复位 I2C 总线 */
-    for (retry = 0; retry < 3; retry++)
-    {
-        buf[0] = 0;
-        buf[1] = 0;
-        buf[2] = 0;
-        
-        if (HAL_I2C_Mem_Read(&hi2c1, W24C02_ADDR_R, STORAGE_BOOT_FLAG_ADDR,
-                             I2C_MEMADD_SIZE_8BIT, buf, 3, 1000) == HAL_OK)
-        {
-            printf("boot flag: 0x%02X 0x%02X 0x%02X\r\n", buf[0], buf[1], buf[2]);
-            return;
-        }
-        
-        /* 读失败：复位 I2C 总线后重试 */
-        HAL_I2C_DeInit(&hi2c1);
-        MX_I2C1_Init();
-        HAL_Delay(10);
-    }
-    
-    printf("boot flag: EEPROM write/read failed after 3 retries\r\n");
 }

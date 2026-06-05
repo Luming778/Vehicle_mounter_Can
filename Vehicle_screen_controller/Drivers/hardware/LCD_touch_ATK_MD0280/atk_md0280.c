@@ -343,6 +343,30 @@ static uint32_t atk_md0280_pow(uint8_t x, uint8_t y)
 }
 
 /**
+ * @brief Deinitialize FSMC and release bus resources (reset GPIO to default)
+ *        so that I2C can work properly after LVGL task is suspended.
+ */
+void fsmc_deinit_for_i2c(void)
+{
+    /* 1. Disable FSMC Bank4 (LCD uses NE4 = Bank4) */
+    /*FSMC 控制器 "Bank4 不再需要工作"，FSMC 状态机停止参与 AHB 总线仲裁 */
+    FSMC_NORSRAM_DEVICE->BTCR[3] &= ~FSMC_BCRx_MBKEN;
+
+    /* 2. Reset FSMC GPIO pins to default input state */
+//    HAL_GPIO_DeInit(GPIOG, GPIO_PIN_0 | GPIO_PIN_12);
+//    HAL_GPIO_DeInit(GPIOE, GPIO_PIN_7  | GPIO_PIN_8  | GPIO_PIN_9  | GPIO_PIN_10 |
+//                            GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 |
+//                            GPIO_PIN_15);
+//    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_0  | GPIO_PIN_1  | GPIO_PIN_4  | GPIO_PIN_5  |
+//                            GPIO_PIN_8  | GPIO_PIN_9  | GPIO_PIN_10 | GPIO_PIN_14 |
+//                            GPIO_PIN_15);
+
+    /* 3. Disable FSMC peripheral clock */
+    __HAL_RCC_FSMC_CLK_DISABLE();
+
+}
+
+/**
  * @brief       ATK-MD0280模块初始化
  * @param       无
  * @retval      ATK_MD0280_EOK  : ATK_MD0280模块初始化成功

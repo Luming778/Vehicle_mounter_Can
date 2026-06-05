@@ -19,12 +19,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
+
+/* USER CODE BEGIN 0 */
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
 #include "app_update.h"
-
-/* USER CODE BEGIN 0 */
+#include "string.h"
 #define	g_circle_buff_len	512           //串口3环形buff长度
 static uint8_t g_rx_buf[g_circle_buff_len];//
 static uint8_t g_uart2_rx_char[4];   //
@@ -125,8 +126,7 @@ void MX_USART3_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART3_Init 2 */
-  /*开dma传输*/
-  HAL_UART_Receive_DMA(&huart3,&g_uart3_rx_char, 1);
+
   /* USER CODE END USART3_Init 2 */
 
 }
@@ -348,7 +348,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
   if(huart->Instance == USART2)
   {
-		printf("USART2 RX: %02X %02X %02X %02X\r\n", g_uart2_rx_char[0], g_uart2_rx_char[1], g_uart2_rx_char[2], g_uart2_rx_char[3]);
+//		printf("USART2 RX: %02X %02X %02X %02X\r\n", g_uart2_rx_char[0], g_uart2_rx_char[1], g_uart2_rx_char[2], g_uart2_rx_char[3]);
 		if(g_uart2_rx_char[0]==0x4A &&g_uart2_rx_char[1]==0x5F &&g_uart2_rx_char[3]==0x8B)
 		{
 		    BaseType_t xHigherPriorityTaskWoken = pdFALSE;

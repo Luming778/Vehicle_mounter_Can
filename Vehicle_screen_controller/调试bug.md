@@ -83,4 +83,67 @@ int main(void)
 
 ![1780451265858](image/调试bug/1780451265858.png)
 
+###### 解决：
+
+加互斥操作
+
 ### 问题五：写入ATC02的更新标志位不对
+
+app程序的IIC无法使用，而bootloader的IIC能正常使用
+
+###### 原因分析：
+
+1.经过测试，单独app程序使用时IIC也使用不了，具体定位到app工程，
+
+2.在app工程main中添加iic测试代码，发现还是没有IIC总线在线
+
+```
+peripherals */
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_CAN_Init();
+  MX_USART3_UART_Init();
+  MX_USART1_UART_Init();
+  MX_USART2_UART_Init();
+  MX_FSMC_Init();  /* 强制复位 I2C1：bootloader 跳转后外设可能残留非默认状态，HAL_I2C_Init 无法完全恢复，需用 SWRST 硬件复位 */
+__HAL_RCC_I2C1_CLK_ENABLE();
+SET_BIT(I2C1->CR1, I2C_CR1_SWRST);
+CLEAR_BIT(I2C1->CR1, I2C_CR1_SWRST);
+MX_I2C1_Init();  /* ---- I2C 诊断：打印寄存器值和设备检测 ---- */
+  {
+      uint32_t pclk1 = HAL_RCC_GetPCLK1Freq();
+      printf("[I2C] PCLK1=%lu Hz | CR2=0x%04lX CCR=0x%04lX TRISE=0x%02lX SR1=0x%04lX SR2=0x%04lX\r\n",
+             pclk1,
+             I2C1->CR2, I2C1->CCR, I2C1->TRISE,
+             I2C1->SR1, I2C1->SR2);
+      printf("[I2C] GPIOB_CRL=0x%08lX ODR=0x%08lX IDR=0x%08lX | ENR_APB1=0x%08lX APB2=0x%08lX\r\n",
+             GPIOB->CRL, GPIOB->ODR, GPIOB->IDR,
+             RCC->APB1ENR, RCC->APB2ENR);      HAL_StatusTypeDef s = HAL_I2C_IsDeviceReady(&hi2c1, 0xA0, 5, 10);
+      if (s == HAL_OK)
+          printf("[I2C] EEPROM detected OK\r\n");
+      else if (s == HAL_TIMEOUT)
+          printf("[I2C] EEPROM not responding (TIMEOUT)\r\n");
+      else
+          printf("[I2C] EEPROM error, status=%d\r\n", s);
+  }
+  /* ---- I2C 诊断结束 ---- */  MX_SPI2_Init();
+  MX_CRC_Init();
+  /* USER CODE BEGIN 2 */  OLED_Init();
+  HAL_CAN_Start(&hcan);
+  CAN_FilterConfig();  /* USER CODE END 2 */  /* Init scheduler /
+  osKernelInitialize();  / Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();  /* Start scheduler */
+  osKernelStart();
+```
+
+3.尝试注释MX_FSMC_Init();后发现IIC可以使用，定位到FSMC外设使用
+
+
+###### 解决：
+
+
+
+
+### 问题六：USART2接收到数据后进入Default_Handler异常
+
+![1780564217884](image/调试bug/1780564217884.png)

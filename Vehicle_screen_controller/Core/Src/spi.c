@@ -121,4 +121,3 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 
 /* USER CODE END 1 */
 
-

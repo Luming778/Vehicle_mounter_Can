@@ -130,6 +130,12 @@ typedef enum
 #define ATK_MD0280_ERROR        1   /* 错误 */
 #define ATK_MD0280_EINVAL       2   /* 非法参数 */
 
+/**
+ * @brief Deinitialize FSMC and release bus resources (reset GPIO to default)
+ *        so that I2C can work properly after LVGL task is suspended.
+ */
+void fsmc_deinit_for_i2c(void);
+
 /* 操作函数 */
 uint8_t atk_md0280_init(void);                                                                                                                          /* ATK-MD0280模块初始化 */
 uint16_t atk_md0280_get_lcd_width(void);                                                                                                                /* 获取ATK-MD0280模块LCD宽度 */
