@@ -182,7 +182,8 @@ void CAN_SendMsg(uint16_t stdID, uint8_t * data, uint8_t len)
   HAL_CAN_AddTxMessage(&hcan, &txHeader, data, &txMailBox);
 
   // 4. 等待发送成功
-  while (__HAL_CAN_GET_FLAG(&hcan, CAN_FLAG_TXOK0) == 0)
+  int timeout = 100000; // 超时时间，单位 ms
+  while (__HAL_CAN_GET_FLAG(&hcan, CAN_FLAG_TXOK0) == 0 && timeout--)
   {
   }
 }

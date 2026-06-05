@@ -25,10 +25,10 @@
 #include "task.h"
 #include "semphr.h"
 #include "app_update.h"
-
+#include "string.h"
 #define	g_circle_buff_len	512           //串口3环形buff长度
 static uint8_t g_rx_buf[g_circle_buff_len];//
-static uint8_t g_uart2_rx_char[4];   //
+uint8_t g_uart2_rx_char[4];   //
 uint8_t g_uart3_rx_char;   //串口3接收数据变量
 circle_buf	g_circle_buff;        //串口3环形buff
 extern TaskHandle_t AT_pars_handle;//AT指令分析任务句柄
@@ -66,6 +66,8 @@ void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
+	__HAL_UART_CLEAR_OREFLAG(&huart1);
+	__HAL_UART_CLEAR_IDLEFLAG(&huart1);
   HAL_UARTEx_ReceiveToIdle_IT(&huart1, usart1_rx_buf, sizeof(usart1_rx_buf));
   /* USER CODE END USART1_Init 2 */
 
@@ -95,8 +97,7 @@ void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
-  /*开中断*/
-  HAL_UART_Receive_IT(&huart2,g_uart2_rx_char, 4);
+
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -126,9 +127,7 @@ void MX_USART3_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART3_Init 2 */
-  /*开dma传输*/
-//	HAL_Delay(1000);//等待系统稳定
-//  HAL_UART_Receive_DMA(&huart3,&g_uart3_rx_char, 1);
+
   /* USER CODE END USART3_Init 2 */
 
 }
@@ -175,22 +174,20 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     /* USART2 clock enable */
     __HAL_RCC_USART2_CLK_ENABLE();
 
-    __HAL_RCC_GPIOD_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
     /**USART2 GPIO Configuration
-    PD5     ------> USART2_TX
-    PD6     ------> USART2_RX
+    PA2     ------> USART2_TX
+    PA3     ------> USART2_RX
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_5;
+    GPIO_InitStruct.Pin = GPIO_PIN_2;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_6;
+    GPIO_InitStruct.Pin = GPIO_PIN_3;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-    __HAL_AFIO_REMAP_USART2_ENABLE();
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /* USART2 interrupt Init */
     HAL_NVIC_SetPriority(USART2_IRQn, 9, 0);
@@ -207,10 +204,10 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     /* USART3 clock enable */
     __HAL_RCC_USART3_CLK_ENABLE();
 
-    __HAL_RCC_GPIOD_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
     /**USART3 GPIO Configuration
-    PD8     ------> USART3_TX
-    PD9     ------> USART3_RX
+    PC10     ------> USART3_TX
+    PC11     ------> USART3_RX
     */
     GPIO_InitStruct.Pin = WIFI_TX_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -222,7 +219,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(WIFI_RX_GPIO_Port, &GPIO_InitStruct);
 
-    __HAL_AFIO_REMAP_USART3_ENABLE();
+    __HAL_AFIO_REMAP_USART3_PARTIAL();
 
     /* USART3 DMA Init */
     /* USART3_RX Init */
@@ -282,10 +279,10 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     __HAL_RCC_USART2_CLK_DISABLE();
 
     /**USART2 GPIO Configuration
-    PD5     ------> USART2_TX
-    PD6     ------> USART2_RX
+    PA2     ------> USART2_TX
+    PA3     ------> USART2_RX
     */
-    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_5|GPIO_PIN_6);
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2|GPIO_PIN_3);
 
     /* USART2 interrupt Deinit */
     HAL_NVIC_DisableIRQ(USART2_IRQn);
@@ -302,10 +299,10 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     __HAL_RCC_USART3_CLK_DISABLE();
 
     /**USART3 GPIO Configuration
-    PD8     ------> USART3_TX
-    PD9     ------> USART3_RX
+    PC10     ------> USART3_TX
+    PC11     ------> USART3_RX
     */
-    HAL_GPIO_DeInit(GPIOD, WIFI_TX_Pin|WIFI_RX_Pin);
+    HAL_GPIO_DeInit(GPIOC, WIFI_TX_Pin|WIFI_RX_Pin);
 
     /* USART3 DMA DeInit */
     HAL_DMA_DeInit(uartHandle->hdmarx);
@@ -319,7 +316,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
-/* UART 空闲中断接收回调（合并 USART1 OTA 触发 + USART2/3 原有逻辑） */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
     if (huart->Instance == USART1)
@@ -346,7 +342,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
         // 原有 ESP8266 逻辑（保持不变）
     }
 }
-
 /* 接收中断(接收一个字节触发一次)函数 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -354,19 +349,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
   if(huart->Instance == USART2)
   {
-		printf("USART2 RX: %02X %02X %02X %02X\r\n", g_uart2_rx_char[0], g_uart2_rx_char[1], g_uart2_rx_char[2], g_uart2_rx_char[3]);
+//		printf("USART2 RX: %02X %02X %02X %02X\r\n", g_uart2_rx_char[0], g_uart2_rx_char[1], g_uart2_rx_char[2], g_uart2_rx_char[3]);
 		if(g_uart2_rx_char[0]==0x4A &&g_uart2_rx_char[1]==0x5F &&g_uart2_rx_char[3]==0x8B)
 		{
 		    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         xQueueSendFromISR(voice_rx_queue, &g_uart2_rx_char[2], &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 		}
-		
+    __HAL_UART_CLEAR_OREFLAG(&huart2);
+	 __HAL_UART_CLEAR_IDLEFLAG(&huart2);
     HAL_UART_Receive_IT(&huart2,g_uart2_rx_char,4);
   }
 	else if(huart->Instance == USART3)
 	{
-		
+
 		circle_buf_write(&g_circle_buff,g_uart3_rx_char);//数据写进环形buf
 		vTaskNotifyGiveFromISR(AT_pars_handle,&xHigherPriorityTaskWoken);  //任务通知AT_pars()任务
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);

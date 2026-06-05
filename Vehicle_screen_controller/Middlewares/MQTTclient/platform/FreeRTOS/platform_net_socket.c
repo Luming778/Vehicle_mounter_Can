@@ -13,8 +13,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 /*WiFi ≈‰÷√∫Í*/
-#define JAP_SSID			"1W18570"
-#define JAP_passwoed	"@27B195v"
+#define JAP_SSID			"8B116"
+#define JAP_passwoed	"8B116369852"
 
 /**********************************************************************
  * ∫Ø ˝√˚≥∆£∫ platform_net_socket_connect	

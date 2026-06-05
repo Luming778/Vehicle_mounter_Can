@@ -37,6 +37,12 @@
 #include "mqttclient.h"
 #include "app_update.h"
 #include "semphr.h"
+#include "demo.h"
+#include "lvgl.h"
+#include "lv_port_lcd_stm32.h"
+#include "lv_port_indev.h"
+#include "atk_md0280.h"
+#include "ui.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,6 +61,7 @@ void oled_task(void * pvParameters );
 void can_task(void * pvParameters );
 void MQTT_Task(void*parm);
 void voice_task(void * pvParameters );
+void lvgl_demo_task(void * pvParameters );
 void ota_task(void *param);
 /* USER CODE END PM */
 
@@ -70,10 +77,13 @@ TaskHandle_t ota_task_handle;
 TaskHandle_t mqtt_handler;
 SemaphoreHandle_t ota_sem;
 
+TaskHandle_t lvgl_demo_handler;//lvgl_demo任务句柄
+
 QueueHandle_t can_rx_queue;
 QueueHandle_t mqtt_can_rx_queue;//服务器接收can消息
-QueueHandle_t voice_rx_queue;
+QueueHandle_t voice_rx_queue; 
 extern uint8_t g_uart3_rx_char;   //串口3接收数据变量
+extern uint8_t g_uart2_rx_char[4];//串口2接收数据变量
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -172,16 +182,21 @@ void StartDefaultTask(void *argument)
   {
      printf("can_task create failed!\r\n");
   }
-//  ret = xTaskCreate(AT_Parse,"AT_parse",68,NULL,15,&AT_pars_handle);
-//  if(ret != pdPASS)
-//  {
-//     printf("AT_parse create failed!\r\n");
-//  }
-//	ret = xTaskCreate(MQTT_Task,"MQTT_Task",200,NULL,15,&mqtt_handler);
-//  if(ret != pdPASS)
-//  {
-//     printf("MQTT_Task create failed!\r\n");
-//  }
+  ret = xTaskCreate(lvgl_demo_task,"lvgl_demo",1024,NULL,14,&lvgl_demo_handler);
+  if(ret != pdPASS)
+  {
+     printf("lvgl_demo_task create failed!\r\n");
+  }
+  ret = xTaskCreate(AT_Parse,"AT_parse",68,NULL,15,&AT_pars_handle);
+  if(ret != pdPASS)
+  {
+     printf("AT_parse create failed!\r\n");
+  }
+	ret = xTaskCreate(MQTT_Task,"MQTT_Task",200,NULL,15,&mqtt_handler);
+  if(ret != pdPASS)
+  {
+     printf("MQTT_Task create failed!\r\n");
+  }
 	xTaskCreate(voice_task,"voice_task",128,NULL,14,&voice_handler);
 	ota_sem = xSemaphoreCreateBinary();
 	xTaskCreate(ota_task,"ota_task",256,NULL,20,&ota_task_handle);
@@ -202,6 +217,7 @@ void StartDefaultTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+
 void oled_task(void * pvParameters )  //can_rx
 {
 	CanMsg_t msg;
@@ -275,7 +291,7 @@ void oled_task(void * pvParameters )  //can_rx
 
 void can_task(void * pvParameters )
 {
-  printf("send test ...\n");
+  printf("send test ...\r\n");
 	// 发送报文
 //	uint32_t stdID = 0x77f;
 //	uint16_t stdID2 =0x768;
@@ -302,6 +318,9 @@ void voice_task(void * pvParameters ) //can_tx
 	uint16_t stdID2 = 0X7bf;
 	uint8_t pdata[3]={0xaa,0x11,0};
 	uint8_t data=0;
+	  /*开中断*/
+  __HAL_UART_CLEAR_OREFLAG(&huart2);
+  HAL_UART_Receive_IT(&huart2,g_uart2_rx_char, 4);
 	while(1)
 	{	
 		while((xQueueReceive( voice_rx_queue,&data ,portMAX_DELAY) != pdPASS));
@@ -376,6 +395,8 @@ void MQTT_Task(void*parm)
     mqtt_client_t *client = NULL;
     
     printf("\nwelcome to mqttclient test...\r\n");
+		
+
 		HAL_UART_Receive_DMA(&huart3,&g_uart3_rx_char, 1); //开dma中断
 	
     mqtt_log_init();
@@ -383,7 +404,7 @@ void MQTT_Task(void*parm)
     client = mqtt_lease();
 	mqtt_set_port(client, "1883");  //修改服务器端口
 	
-    mqtt_set_host(client, "10.60.14.76");  //修改服务器IP
+    mqtt_set_host(client, "192.168.101.34");  //修改服务器IP
     mqtt_set_client_id(client, random_string(10));
     mqtt_set_user_name(client, random_string(10));
     mqtt_set_password(client, random_string(10));
@@ -467,6 +488,9 @@ void MQTT_Task(void*parm)
 			// vTaskDelay(3000);
 		}
 }
+
+
+
 void ota_task(void *param)
 {
     // 阻塞等待信号量，由 USART1 中断唤醒
@@ -479,11 +503,17 @@ void ota_task(void *param)
     if (mqtt_handler)   vTaskSuspend(mqtt_handler);
     if (voice_handler)  vTaskSuspend(voice_handler);
     if (can_handler)    vTaskSuspend(can_handler);
+	if (lvgl_demo_handler) vTaskSuspend(lvgl_demo_handler);
     printf("OTA: all tasks suspended\r\n");
-
+	/* 释放 FSMC 总线资源，确保 OTA 更新过程中 I2C 不会冲突 */
+	fsmc_deinit_for_i2c(); 
+	/* 挂起其他任务中断*/
+	HAL_NVIC_DisableIRQ(USART2_IRQn);
+	HAL_NVIC_DisableIRQ(USART3_IRQn);
+	
     // 等待 100ms，让被挂起的任务完成当前操作
     vTaskDelay(pdMS_TO_TICKS(100));
-
+	
     // 初始化 OTA 模块
     App_update_init();
     printf("OTA: init done, starting state machine\r\n");
@@ -493,6 +523,50 @@ void ota_task(void *param)
     {
         App_update_work();
         vTaskDelay(pdMS_TO_TICKS(1));
+    }
+}
+
+
+
+/**
+ * @brief LVGL demo task: initializes LVGL and runs the widgets demo
+ * @param pvParameters Not used
+ */
+void lvgl_demo_task(void *pvParameters)
+{
+    uint8_t ret;
+
+    /* 1. Initialize ATK-MD0280 LCD hardware (FSMC + touch calibration) */
+    ret = atk_md0280_init();
+    if (ret != ATK_MD0280_EOK)
+    {
+        printf("ATK-MD0280 init failed!\r\n");
+        while (1)
+        {
+            vTaskDelay(1000);
+        }
+    }
+    printf("ATK-MD0280 initialized OK\r\n");
+
+    /* 2. Initialize LVGL core */
+    lv_init();
+
+    /* 3. Initialize LCD display port */
+    lv_port_disp_init();
+
+    /* 4. Initialize touch input port */
+    lv_port_indev_init();
+
+    /* 5. Create UI */
+    ui_init();
+    printf("LVGL UI started\r\n");
+
+    /* 6. Main loop: call LVGL timer handler periodically */
+    while (1)
+    {
+        /* LVGL timer handler must be called regularly (every few ms) */
+        lv_timer_handler();
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 

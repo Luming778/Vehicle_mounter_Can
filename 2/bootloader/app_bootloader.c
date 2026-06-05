@@ -10,11 +10,15 @@ void App_bootloader_check_update(void)
 {
     printf("bootloader start\r\n");
     printf("check update\r\n");
+
     // 读取3个字节的数据
     uint8_t data[3];
     Int_w24c02_read_bytes(CHECK_UPDATE_ADDR, data, 3);
+	
+
     // 1. 校验秘钥是否正确  高8位在前
-    uint16_t key = data[1] << 8 | data[2];
+     uint16_t key = data[1] << 8 | data[2];
+    
     if (key != CHECK_KEY)
     {
         // 2. 秘钥不正确  不进行更新  重置秘钥
@@ -175,7 +179,6 @@ static void App_bootloader_write_app_flash(void)
         }
     }
     printf("write app flash success:%d,%d\n",app_size,app_size_left);
-
     // 2. 上锁flash
     HAL_FLASH_Lock();
 }

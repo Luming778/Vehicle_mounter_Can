@@ -1,6 +1,7 @@
 #include "storage.h"
 #include "storage_adapter.h"
-
+#include "Int_w24c02.h"
+#include "stdio.h"
 void storage_write_firmware(uint32_t addr, uint8_t *data, uint16_t len)
 {
     storage_adapter_write_flash(addr, data, len);
@@ -40,9 +41,12 @@ void storage_write_metadata(uint32_t app_addr, uint32_t app_len)
 void storage_set_boot_flag(void)
 {
     uint8_t buf[3] = {0};
+    uint8_t retry;
+    
     buf[0] = STORAGE_BOOT_UPDATE;
     buf[1] = (STORAGE_CHECK_KEY >> 8) & 0xFF;
     buf[2] = STORAGE_CHECK_KEY & 0xFF;
-
+    
     storage_adapter_write_eeprom(STORAGE_BOOT_FLAG_ADDR, buf, 3);
+    
 }

@@ -23,4 +23,9 @@ void storage_adapter_erase_sector(uint8_t block, uint8_t sector);
  */
 void storage_adapter_write_eeprom(uint8_t byte_addr, uint8_t *data, uint16_t len);
 
+/**
+ * @brief 初始化存储适配层（创建互斥量）
+ */
+void storage_adapter_init(void);
+
 #endif // __STORAGE_ADAPTER_H

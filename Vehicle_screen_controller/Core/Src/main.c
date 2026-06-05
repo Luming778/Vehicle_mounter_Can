@@ -26,11 +26,14 @@
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
+//#include "fsmc.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "OLED.h"
 #include "platform_esp8266_AT.h"
+#include "lvgl.h"
+
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -64,7 +67,7 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define APP_START_ADDR  0x0800c000
+
 /* USER CODE END 0 */
 
 /**
@@ -75,9 +78,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  __disable_irq();
-	SCB->VTOR =APP_START_ADDR;
-	__enable_irq();
+	/* __enable_irq()  */
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -103,6 +104,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  //MX_FSMC_Init(); /*ÓëÓ²¼þIIC1³åÍ»*/
   MX_I2C1_Init();
   MX_SPI2_Init();
   MX_CRC_Init();
@@ -111,7 +113,7 @@ int main(void)
   OLED_Init();
   HAL_CAN_Start(&hcan);
   CAN_FilterConfig();
-
+	
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -127,7 +129,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-   
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -196,6 +199,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
+    if (htim->Instance == TIM4)
+  {
+    /* Inform LVGL about a millisecond tick */
+    lv_tick_inc(1);
+  }
 
   /* USER CODE END Callback 1 */
 }

@@ -59,10 +59,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define W25Q128_CS_Pin GPIO_PIN_12
 #define W25Q128_CS_GPIO_Port GPIOB
-#define WIFI_TX_Pin GPIO_PIN_8
-#define WIFI_TX_GPIO_Port GPIOD
-#define WIFI_RX_Pin GPIO_PIN_9
-#define WIFI_RX_GPIO_Port GPIOD
+#define WIFI_TX_Pin GPIO_PIN_10
+#define WIFI_TX_GPIO_Port GPIOC
+#define WIFI_RX_Pin GPIO_PIN_11
+#define WIFI_RX_GPIO_Port GPIOC
 #define LED_Pin GPIO_PIN_5
 #define LED_GPIO_Port GPIOB
 

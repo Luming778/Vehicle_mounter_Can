@@ -22,11 +22,15 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-
+extern QueueHandle_t voice_rx_queue;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -90,7 +94,19 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  /* 打印故障寄存器，帮助定位 Default_Handler 来源 */
+  printf("\r\n[HARD FAULT]\r\n");
+  printf("  HFSR=0x%08lX  CFSR=0x%08lX  MMFAR=0x%08lX  BFAR=0x%08lX\r\n",
+         SCB->HFSR, SCB->CFSR, SCB->MMFAR, SCB->BFAR);
+  /* 从栈中取出崩溃时的PC (MSP) */
+  uint32_t *sp = (uint32_t *)__get_MSP();
+  printf("  SP=0x%08lX | stacked: R0=%08lX R1=%08lX R2=%08lX R3=%08lX R12=%08lX LR=%08lX PC=%08lX xPSR=%08lX\r\n",
+         (uint32_t)sp, sp[0], sp[1], sp[2], sp[3], sp[4], sp[5], sp[6], sp[7]);
+  /* 检查 USART2 相关寄存器 */
+  printf("  USART2: SR=0x%08lX DR=0x%08lX CR1=0x%08lX\r\n",
+         USART2->SR, USART2->DR, USART2->CR1);
+  printf("  huart2.RxState=%d, voice_rx_queue=%p\r\n",
+         huart2.RxState, (void *)voice_rx_queue);
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -263,5 +279,23 @@ void USART3_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
-
+/**
+ * @brief  Default_Handler — 捕获未被正确处理的外设中断
+ *         覆盖 startup 文件中的弱定义, 打印中断编号定位来源
+ */
+void Default_Handler(void)
+{
+    /* IPSR 寄存器低9位表示当前正在处理的中断编号
+     *  0 = Thread mode, 1=Reset, 2=NMI, 3=HardFault, 11=SVCall, 14=PendSV, 15=SysTick,
+     *  16+ = 外设中断 (减16即为 NVIC_IRQn)
+     */
+    uint32_t ipsr = __get_IPSR() & 0x1FF;
+    printf("\r\n[DEFAULT HANDLER] Unexpected IRQ #%lu (NVIC IRQn=%d)\r\n",
+           ipsr, (int)(ipsr - 16));
+    /* 额外打印 USART2/CAN 状态辅助定位 */
+    printf("  USART2: SR=0x%08lX\r\n", USART2->SR);
+    printf("  CAN: MSR=0x%08lX TSR=0x%08lX ESR=0x%08lX\r\n",
+           CAN1->MSR, CAN1->TSR, CAN1->ESR);
+    while (1) {}
+}
 /* USER CODE END 1 */

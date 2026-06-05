@@ -5,6 +5,8 @@
 #include "crc.h"
 #include <string.h>
 
+extern void storage_adapter_init(void);
+
 volatile Update_State_t update_state = UPDATE_IDLE;
 
 // 双缓冲
@@ -164,6 +166,7 @@ static void handle_boot_update(void)
 {
     storage_write_metadata(STORAGE_FW_ADDR, total_rec_len);
     storage_set_boot_flag();
+    
     reset_tick = HAL_GetTick();
     update_state = UPDATE_END;
 }
@@ -176,6 +179,9 @@ void App_update_init(void)
     // UART 初始化已在 usart.c 中完成，此处不再配置
     can_bus_init();
     update_state = UPDATE_RECV_SEND_CMD;  // 直接进入发送命令状态
+    // w25q128和w24c02的初始化在 storage_adapter_init 中完成，此处不再配置
+    storage_adapter_init();
+
 }
 
 void App_update_work(void)
