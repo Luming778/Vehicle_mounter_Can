@@ -14,7 +14,7 @@ static uint8_t page_buf_a[STORAGE_PAGE_SIZE];
 static uint8_t page_buf_b[STORAGE_PAGE_SIZE];
 static uint8_t *volatile active_buf = page_buf_a;
 static uint8_t *volatile ready_buf  = NULL;
-static volatile uint16_t page_offset = 0;
+static volatile uint32_t page_offset = 0;
 
 volatile uint32_t total_rec_len = 0;
 volatile uint32_t flash_write_addr = STORAGE_FW_ADDR;
@@ -22,6 +22,9 @@ volatile uint32_t can_last_tick = 0;
 volatile uint8_t page_ready = 0;
 volatile uint8_t crc_rx_flag = 0;
 static uint8_t crc_data[4];
+
+// CRC 计算：接收到的总字节数（用于对齐到 4 字节边界）
+static volatile uint32_t crc_byte_count = 0;
 
 // 复位延时计时
 static uint32_t reset_tick = 0;
@@ -81,11 +84,14 @@ static void handle_send_cmd(void)
 {
      printf("recv cmd\r\n");
      printf("erasing flash...\r\n");
+    /*擦除w25q128*/
     storage_erase_firmware_area();
+
      printf("erase done\r\n");
 
     page_offset = 0;
     total_rec_len = 0;
+    crc_byte_count = 0;
     flash_write_addr = STORAGE_FW_ADDR;
     can_last_tick = 0;
     page_ready = 0;
@@ -100,6 +106,21 @@ static void handle_send_cmd(void)
      printf("send cmd done\r\n");
 }
 
+/**
+ * @brief  处理CAN OTA接收到的固件数据，完成Flash写入及超时收尾
+ *
+ * 在主循环中轮询调用，执行两项任务：
+ * 1. 将中断中已填满的页缓冲区写入Flash存储；
+ * 2. 当CAN总线超过1秒无新数据时，将不足一页的剩余数据写入Flash，
+ *    并将OTA状态切换至数据校验阶段。
+ *
+ * @note  本函数在主循环上下文中执行，不阻塞中断；超时阈值基于发送端
+ *        每256字节延时100ms的节奏设定，确保在发送端发送CRC校验前
+ *        完成最后一页的写入。
+ *
+ * @param  无
+ * @return 无
+ */
 static void handle_recv_data(void)
 {
     // 写入已满的页（在主循环中执行，不阻塞中断）
@@ -108,6 +129,10 @@ static void handle_recv_data(void)
         uint8_t *buf = ready_buf;
         page_ready = 0;
         storage_write_firmware(flash_write_addr, buf, STORAGE_PAGE_SIZE);
+        // 写入 W25Q32 的同时，用同一块 buffer 累加 CRC
+        // 256 字节 = 64 个 32-bit word，整除，无需对齐
+        HAL_CRC_Accumulate(&hcrc, (uint32_t *)buf, STORAGE_PAGE_SIZE / 4);
+        crc_byte_count += STORAGE_PAGE_SIZE;
         flash_write_addr += STORAGE_PAGE_SIZE;
     }
 
@@ -119,6 +144,20 @@ static void handle_recv_data(void)
         if (page_offset > 0)
         {
             storage_write_firmware(flash_write_addr, active_buf, page_offset);
+            // 最后不足一页的数据：对齐到 4 字节边界后累加 CRC
+            uint32_t aligned_words = page_offset / 4;
+            if (aligned_words > 0)
+            {
+                HAL_CRC_Accumulate(&hcrc, (uint32_t *)active_buf, aligned_words);
+            }
+            uint32_t remainder = page_offset % 4;
+            if (remainder > 0)
+            {
+                uint32_t padded = 0;
+                memcpy(&padded, &active_buf[aligned_words * 4], remainder);
+                HAL_CRC_Accumulate(&hcrc, &padded, 1);
+            }
+            crc_byte_count += page_offset;
         }
          printf("can_rec_msg_len:%d\n", total_rec_len);
         update_state = UPDATE_RECV_CHECK_DATA;
@@ -133,22 +172,11 @@ static void handle_check_data(void)
     crc_rx_flag = 0;
     uint32_t rec_crc = crc_data[0] | (crc_data[1] << 8) | (crc_data[2] << 16) | (crc_data[3] << 24);
 
-    __HAL_CRC_DR_RESET(&hcrc);
-    uint32_t words_remaining = (total_rec_len + 3) / 4;
-    uint32_t addr = STORAGE_FW_ADDR;
-    uint8_t read_buf[256];
-
-    while (words_remaining > 0)
-    {
-        uint32_t chunk = words_remaining;
-        if (chunk > 64) chunk = 64;
-        storage_read_firmware(addr, read_buf, chunk * 4);
-        HAL_CRC_Accumulate(&hcrc, (uint32_t *)read_buf, chunk);
-        addr += chunk * 4;
-        words_remaining -= chunk;
-    }
-
+    // CRC 已在 handle_recv_data() 中随接收实时累加，直接读取结果
     uint32_t calc_crc = hcrc.Instance->DR;
+
+    // 调试：确认 CRC 累加的字节数与接收字节数一致
+    printf("crc_byte_count=%lu total_rec_len=%lu\r\n", crc_byte_count, total_rec_len);
 
     if (rec_crc == calc_crc)
     {

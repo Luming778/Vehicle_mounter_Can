@@ -30,7 +30,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "OLED.h"
+//#include "OLED.h"
 #include "platform_esp8266_AT.h"
 #include "lvgl.h"
 
@@ -110,7 +110,7 @@ int main(void)
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   
-  OLED_Init();
+  //OLED_Init();
   HAL_CAN_Start(&hcan);
   CAN_FilterConfig();
 	

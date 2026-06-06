@@ -78,13 +78,14 @@ Core/                    ← CubeMX-generated (main.c, stm32f1xx_it.c, freertos.
 Drivers/
   STM32F1xx_HAL_Driver/  ← ST HAL library
   CMSIS/                 ← ARM core headers
-  Peripheral_Driver/     ← Custom abstractions (driver_key, driver_led, driver_can, driver_oled)
   hardware/              ← OLED driver (SSD1306), circle_buffer (screen controller only)
   bootloader/            ← OTA module (screen controller only)
 Middlewares/              ← FreeRTOS + mqttclient library (screen controller only)
 ```
 
-Bootloaders (`1/bootloader/`, `2/bootloader/`) follow a different structure: `app_bootloader.c` (state machine) + `Int_bootloader.c` (low-level flash/storage drivers).
+Bootloaders (`bootloader_start/bootloader/`, `Backup programming/bootloader/`) follow a different structure: `app_bootloader.c` (state machine) + `Int_bootloader.c` (low-level flash/storage drivers).
+
+Note: The `1/` and `2/` directories referenced in the build system table above are deleted from the working tree. The actual bootloader implementations are in `bootloader_start/` and `Backup programming/`.
 
 ## FreeRTOS Tasks (screen controller only)
 

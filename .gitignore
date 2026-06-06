@@ -1,0 +1,38 @@
+# Keil MDK-ARM 编译产物
+*.o
+*.d
+*.crf
+*.axf
+*.hex
+*.bin
+*.htm
+*.lnp
+*.sct
+*.dep
+*.lst
+*.map
+*.build_log.htm
+*.iex
+
+# Keil 工程用户配置
+*.uvguix.*
+*.uvoptx
+
+# Listings 和 Objects 目录
+**/Listings/
+**/Objects/
+**/RTE/
+
+# Debug 和 Release 输出
+**/Debug/
+**/Release/
+
+# STM32CubeMX 临时文件
+*.bak
+*.tmp
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+bash.exe.stackdump

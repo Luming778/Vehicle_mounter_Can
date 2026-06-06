@@ -29,7 +29,6 @@
 #include "can.h"
 #include "usart.h"
 #include "string.h"
-#include "OLED.h"
 #include "queue.h"
 #include "platform_esp8266_AT.h"
 #include "mqtt_config.h"
@@ -57,7 +56,6 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-void oled_task(void * pvParameters );
 void can_task(void * pvParameters );
 void MQTT_Task(void*parm);
 void voice_task(void * pvParameters );
@@ -67,7 +65,6 @@ void ota_task(void *param);
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-TaskHandle_t  oled_handler;
 TaskHandle_t  can_handler;
 
 TaskHandle_t  voice_handler;
@@ -81,9 +78,12 @@ TaskHandle_t lvgl_demo_handler;//lvgl_demo任务句柄
 
 QueueHandle_t can_rx_queue;
 QueueHandle_t mqtt_can_rx_queue;//服务器接收can消息
-QueueHandle_t voice_rx_queue; 
+QueueHandle_t voice_rx_queue;
+QueueHandle_t lvgl_can_rx_queue; // LVGL接收can消息
 extern uint8_t g_uart3_rx_char;   //串口3接收数据变量
 extern uint8_t g_uart2_rx_char[4];//串口2接收数据变量
+
+mqtt_client_t *client = NULL; //mqtt
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -172,17 +172,12 @@ void StartDefaultTask(void *argument)
   BaseType_t ret;
 	 // 进入临界区
   taskENTER_CRITICAL();
-	ret = xTaskCreate(oled_task,"oled_task",200,NULL,15,&oled_handler);
-  if(ret != pdPASS)
-  {
-     printf("oled_task create failed!\r\n");
-  }
 	ret = xTaskCreate(can_task,"can_task",128,NULL,13,&can_handler);
   if(ret != pdPASS)
   {
      printf("can_task create failed!\r\n");
   }
-  ret = xTaskCreate(lvgl_demo_task,"lvgl_demo",1024,NULL,14,&lvgl_demo_handler);
+  ret = xTaskCreate(lvgl_demo_task,"lvgl_demo",1536,NULL,14,&lvgl_demo_handler);
   if(ret != pdPASS)
   {
      printf("lvgl_demo_task create failed!\r\n");
@@ -204,6 +199,7 @@ void StartDefaultTask(void *argument)
 	can_rx_queue = xQueueCreate(5, sizeof(CanMsg_t));
   mqtt_can_rx_queue = xQueueCreate(5, sizeof(CanMsg_t)); //在can接收中断队列
 	voice_rx_queue = xQueueCreate(5, sizeof(uint8_t));
+	lvgl_can_rx_queue = xQueueCreate(5, sizeof(CanMsg_t)); // LVGL接收队列
    // 退出临界区
   taskEXIT_CRITICAL();
 	vTaskDelete(NULL);
@@ -217,77 +213,6 @@ void StartDefaultTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-
-void oled_task(void * pvParameters )  //can_rx
-{
-	CanMsg_t msg;
-	OLED_Printf(0,0, OLED_8X16,"车灯:");
-	OLED_Printf(0,16,OLED_8X16,"车窗:");
-	OLED_Printf(0,32,OLED_8X16,"天窗:");
-	OLED_Printf(0,48,OLED_8X16,"车门:");	
-	OLED_Update();
-	
-	while(1)
-	{
-		while(xQueueReceive(can_rx_queue, &msg, portMAX_DELAY) != pdPASS);
-		if(msg.stdID==0x666)
-		{
-			if(msg.data[2]==0x01)
-			{
-				OLED_ClearArea(40,0,32,16);
-				OLED_Printf(40,0,OLED_8X16,"开启");
-				OLED_UpdateArea(40,0,32,16);
-			}
-			else if(msg.data[2]==0x02)
-			{
-				OLED_ClearArea(40,0,32,16);
-				OLED_Printf(40,0,OLED_8X16,"关闭");
-				OLED_UpdateArea(40,0,32,16);
-			}
-			else if(msg.data[2]==0x03)
-			{
-				OLED_ClearArea(40,16,32,16);
-				OLED_Printf(40,16,OLED_8X16,"开启");
-				OLED_UpdateArea(40,16,32,16);
-			}
-			else if(msg.data[2]==0x04)
-			{
-				OLED_ClearArea(40,16,32,16);
-				OLED_Printf(40,16,OLED_8X16,"关闭");
-				OLED_UpdateArea(40,16,32,16);
-			}
-			else if(msg.data[2]==0x05)
-			{
-				OLED_ClearArea(40,32,32,16);
-				OLED_Printf(40,32,OLED_8X16,"开启");
-				OLED_UpdateArea(40,32,32,16);
-			}
-			else if(msg.data[2]==0x06)
-			{
-				OLED_ClearArea(40,32,32,16);
-				OLED_Printf(40,32,OLED_8X16,"关闭");
-				OLED_UpdateArea(40,32,32,16);
-			}
-		}
-		else if(msg.stdID==0x555)
-		{
-			if(msg.data[2]==0x07)
-			{
-				OLED_ClearArea(40,48,32,16);
-				OLED_Printf(40,48,OLED_8X16,"开启");
-				OLED_UpdateArea(40,48,32,16);
-			}
-			else if(msg.data[2]==0x08)
-			{
-				OLED_ClearArea(40,48,32,16);
-				OLED_Printf(40,48,OLED_8X16,"关闭");
-				OLED_UpdateArea(40,48,32,16);
-		  }
-		}
-		//vTaskDelay(1000);
-	}
-}
-
 
 void can_task(void * pvParameters )
 {
@@ -308,7 +233,7 @@ void can_task(void * pvParameters )
 		//CAN_SendMsg(stdID2, data2, strlen((char *)data2));
 		//printf("send ok...\r\n");
 		// 每隔1s发送一次报文
-		  vTaskDelay(1000);
+		  vTaskDelay(100);
 	}
 }
 
@@ -392,7 +317,7 @@ static void MQTTSmart_handler(void* client, message_data_t* msg)
 void MQTT_Task(void*parm)
 {
     int res;
-    mqtt_client_t *client = NULL;
+
     
     printf("\nwelcome to mqttclient test...\r\n");
 		
@@ -498,9 +423,11 @@ void ota_task(void *param)
     printf("OTA task woken up!\r\n");
     // 被唤醒后，挂起所有其他任务
     printf("OTA: suspending tasks...\r\n");
-    if (oled_handler)   vTaskSuspend(oled_handler);
+	//关闭mqtt连接
+	  mqtt_disconnect(client);
     if (AT_pars_handle) vTaskSuspend(AT_pars_handle);
     if (mqtt_handler)   vTaskSuspend(mqtt_handler);
+		if(client->mqtt_thread->thread) vTaskSuspend(client->mqtt_thread->thread); //挂起mqtt线程
     if (voice_handler)  vTaskSuspend(voice_handler);
     if (can_handler)    vTaskSuspend(can_handler);
 	if (lvgl_demo_handler) vTaskSuspend(lvgl_demo_handler);
@@ -535,6 +462,7 @@ void ota_task(void *param)
 void lvgl_demo_task(void *pvParameters)
 {
     uint8_t ret;
+    CanMsg_t can_msg;
 
     /* 1. Initialize ATK-MD0280 LCD hardware (FSMC + touch calibration) */
     ret = atk_md0280_init();
@@ -561,9 +489,32 @@ void lvgl_demo_task(void *pvParameters)
     ui_init();
     printf("LVGL UI started\r\n");
 
-    /* 6. Main loop: call LVGL timer handler periodically */
+    /* 6. Main loop: call LVGL timer handler and process CAN messages */
     while (1)
     {
+        /* Check for CAN messages (non-blocking) */
+        if (xQueueReceive(lvgl_can_rx_queue, &can_msg, 0) == pdPASS)
+        {
+            /* Parse CAN message from nodes */
+            if (can_msg.stdID == 0x666 || can_msg.stdID == 0x555)
+            {
+                /* Verify header bytes: {0x13, 0x24, cmd, extra} */
+                if (can_msg.data[0] == 0x13 && can_msg.data[1] == 0x24)
+                {
+                    uint8_t cmd = can_msg.data[2];
+                    bool active = false;
+
+                    /* Determine state: odd cmd = ON, even cmd = OFF */
+                    if (cmd == 0x01 || cmd == 0x03 || cmd == 0x05 || cmd == 0x07) {
+                        active = true;
+                    }
+
+                    /* Update UI */
+                    ui_update_status(cmd, active);
+                }
+            }
+        }
+
         /* LVGL timer handler must be called regularly (every few ms) */
         lv_timer_handler();
         vTaskDelay(pdMS_TO_TICKS(5));

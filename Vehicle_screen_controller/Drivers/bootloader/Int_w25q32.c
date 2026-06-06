@@ -1,7 +1,10 @@
 #include "Int_w25q32.h"
+#include "stm32f1xx_hal.h"
+
+#define W25Q32_BUSY_TIMEOUT_MS  5000
 
 /**
- * @brief À­µÍÆ¬Ñ¡
+ * @brief ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
  *
  */
 void Int_w25q32_start(void)
@@ -10,7 +13,7 @@ void Int_w25q32_start(void)
 }
 
 /**
- * @brief À­¸ßÆ¬Ñ¡
+ * @brief ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
  *
  */
 void Int_w25q32_stop(void)
@@ -19,7 +22,7 @@ void Int_w25q32_stop(void)
 }
 
 /**
- * @brief Ð´ÈëÒ»¸ö×Ö½Ú
+ * @brief Ð´ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö½ï¿½
  *
  * @param data
  */
@@ -29,7 +32,7 @@ void Int_w25q32_write_byte(uint8_t data)
 }
 
 /**
- * @brief ¶ÁÈ¡Ò»¸ö×Ö½Ú
+ * @brief ï¿½ï¿½È¡Ò»ï¿½ï¿½ï¿½Ö½ï¿½
  *
  * @return uint8_t
  */
@@ -42,82 +45,75 @@ uint8_t Int_w25q32_read_byte(void)
 }
 
 /**
- * @brief ¶ÁÈ¡Ð¾Æ¬ID
+ * @brief ï¿½ï¿½È¡Ð¾Æ¬ID
  *
  * @param mf_id
  * @param device_id
  */
 void Int_w25q32_read_id(uint8_t *mf_id, uint16_t *device_id)
 {
-    // 1. À­µÍÆ¬Ñ¡
+    // 1. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_start();
 
-    // 2. ·¢ËÍ¶ÁÈ¡IDÖ¸Áî
+    // 2. ï¿½ï¿½ï¿½Í¶ï¿½È¡IDÖ¸ï¿½ï¿½
     Int_w25q32_write_byte(W25Q32_READ_ID);
 
-    // 3. ¶ÁÈ¡mf_id
+    // 3. ï¿½ï¿½È¡mf_id
     *mf_id = Int_w25q32_read_byte();
     uint8_t high = Int_w25q32_read_byte();
     uint8_t low = Int_w25q32_read_byte();
     *device_id = high << 8 | low;
 
-    // 4. À­¸ßÆ¬Ñ¡
+    // 4. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_stop();
 }
 
-// ¾²Ì¬·½·¨ µÈ´ýÐ¾Æ¬Ã¦×´Ì¬
-static void Int_w25q32_wait_busy(void)
+// ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ ï¿½È´ï¿½Ð¾Æ¬Ã¦×´Ì¬
+static uint8_t Int_w25q32_wait_busy(void)
 {
-    // 1. À­µÍÆ¬Ñ¡
     Int_w25q32_start();
 
-    // 2. ¶ÁÈ¡×´Ì¬¼Ä´æÆ÷
+    uint32_t tick_start = HAL_GetTick();
     while (1)
     {
         Int_w25q32_write_byte(W25Q32_READ_STATUS_REG);
         uint8_t status = Int_w25q32_read_byte();
-        // ÕÒµ½busyÊÇ×îµÍÎ»µÄÖµ  Îª0±íÊ¾²»Ã¦
         if ((status & 0x01) == 0)
         {
-            break;
+            Int_w25q32_stop();
+            return 0;
+        }
+        if ((HAL_GetTick() - tick_start) > W25Q32_BUSY_TIMEOUT_MS)
+        {
+            Int_w25q32_stop();
+            return 1;
         }
     }
-
-    // 3. À­¸ßÆ¬Ñ¡
-    Int_w25q32_stop();
 }
 
 /**
- * @brief ¶ÁÈ¡Êý¾Ý
+ * @brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
  *
- * addr: Ò»¹²ÊÇ22Î»  0x000000 -> 0x3F  F  F  FF  Ò»´Î²Á³ý4096×Ö½Ú  Ò»´ÎÐ´ÈëÊÇ256×Ö½Ú
+ * addr: Ò»ï¿½ï¿½ï¿½ï¿½22Î»  0x000000 -> 0x3F  F  F  FF  Ò»ï¿½Î²ï¿½ï¿½ï¿½4096ï¿½Ö½ï¿½  Ò»ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½256ï¿½Ö½ï¿½
  */
 // void Int_w25q32_read_data(uint32_t addr, uint8_t *data, uint16_t len);
 void Int_w25q32_read_data(uint8_t block, uint8_t sector, uint8_t page, uint8_t addr, uint8_t *data, uint16_t len)
 {
-    // 1. µÈ´ýÃ¦×´Ì¬
-    Int_w25q32_wait_busy();
-
-    // 2. À­µÍÆ¬Ñ¡
     Int_w25q32_start();
 
-    // 3. ·¢ËÍ¶ÁÈ¡Êý¾ÝÖ¸Áî
     Int_w25q32_write_byte(W25Q32_READ_DATA);
     uint32_t addr_24 = block << 16 | sector << 12 | page << 8 | addr;
     Int_w25q32_write_byte(addr_24 >> 16);
     Int_w25q32_write_byte(addr_24 >> 8);
     Int_w25q32_write_byte(addr_24);
 
-    for (uint16_t i = 0; i < len; i++)
-    {
-        data[i] = Int_w25q32_read_byte();
-    }
-    // 4. À­¸ßÆ¬Ñ¡
+    HAL_SPI_Receive(&hspi2, data, len, 100);
+
     Int_w25q32_stop();
 }
 
 /**
- * @brief ¶ÁÈ¡Êý¾Ý 32Î»µØÖ·
+ * @brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ 32Î»ï¿½ï¿½Ö·
  *
  * @param addr
  * @param data
@@ -125,107 +121,105 @@ void Int_w25q32_read_data(uint8_t block, uint8_t sector, uint8_t page, uint8_t a
  */
 void Int_w25q32_read_data_with_32addr(uint32_t addr, uint8_t *data, uint16_t len)
 {
-    // 1. µÈ´ýÃ¦×´Ì¬
-    Int_w25q32_wait_busy();
-
-    // 2. À­µÍÆ¬Ñ¡
     Int_w25q32_start();
 
-    // 3. ·¢ËÍ¶ÁÈ¡Êý¾ÝÖ¸Áî
     Int_w25q32_write_byte(W25Q32_READ_DATA);
 
     Int_w25q32_write_byte((addr >> 16) & 0xff);
     Int_w25q32_write_byte((addr >> 8) & 0xff);
     Int_w25q32_write_byte(addr & 0xff);
 
-    for (uint16_t i = 0; i < len; i++)
-    {
-        data[i] = Int_w25q32_read_byte();
-    }
-    // 4. À­¸ßÆ¬Ñ¡
+    HAL_SPI_Receive(&hspi2, data, len, 100);
+
     Int_w25q32_stop();
 }
 
 static void Int_w25q32_write_enable(void)
 {
-    // 1. µÈ´ýÃ¦×´Ì¬
+    // 1. ï¿½È´ï¿½Ã¦×´Ì¬
     Int_w25q32_wait_busy();
-    // 2. À­µÍÆ¬Ñ¡
+    // 2. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_start();
-    // 3. ·¢ËÍÐ´Ê¹ÄÜÃüÁî
+    // 3. ï¿½ï¿½ï¿½ï¿½Ð´Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     Int_w25q32_write_byte(W25Q32_WRITE_ENABLE);
-    // 4. À­µÍÆ¬Ñ¡
+    // 4. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_stop();
 }
 
 /**
- * @brief Ð´ÈëÊý¾Ý
- * ¼ÙÉèµØÖ·²»³¬³ö1Ò³µÄ·¶Î§
+ * @brief Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1Ò³ï¿½Ä·ï¿½Î§
  */
 void Int_w25q32_write_data(uint8_t block, uint8_t sector, uint8_t page, uint8_t addr, uint8_t *data, uint16_t len)
 {
-    // 1.  Ð´Ê¹ÄÜ
+    // 1.  Ð´Ê¹ï¿½ï¿½
     Int_w25q32_write_enable();
 
-    // 2. À­µÍÆ¬Ñ¡
+    // 2. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_start();
     uint32_t addr_24 = block << 16 | sector << 12 | page << 8 | addr;
     Int_w25q32_write_byte(W25Q32_WRITE_DATA);
     Int_w25q32_write_byte(addr_24 >> 16);
     Int_w25q32_write_byte(addr_24 >> 8);
     Int_w25q32_write_byte(addr_24);
-    // 3. Ð´ÈëÊý¾Ý
+    // 3. Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     for (uint16_t i = 0; i < len; i++)
     {
         Int_w25q32_write_byte(data[i]);
     }
-    // 4. À­¸ßÆ¬Ñ¡
+    // 4. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_stop();
+    // 5. ï¿½ï¿½ï¿½È´ï¿½Ò³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    Int_w25q32_wait_busy();
 }
 
 /**
- * @brief Ð´ÈëÊý¾Ý
- * ¼ÙÉèµØÖ·²»³¬³ö1Ò³µÄ·¶Î§
+ * @brief Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1Ò³ï¿½Ä·ï¿½Î§
  */
 void Int_w25q32_write_data_with_32addr(uint32_t addr, uint8_t *data, uint16_t len)
 {
-    // 1.  Ð´Ê¹ÄÜ
+    // 1.  Ð´Ê¹ï¿½ï¿½
     Int_w25q32_write_enable();
 
-    // 2. À­µÍÆ¬Ñ¡
+    // 2. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_start();
 
     Int_w25q32_write_byte(W25Q32_WRITE_DATA);
     Int_w25q32_write_byte((addr >> 16) & 0xff);
     Int_w25q32_write_byte((addr >> 8) & 0xff);
     Int_w25q32_write_byte(addr & 0xff);
-    // 3. Ð´ÈëÊý¾Ý
+    // 3. Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     for (uint16_t i = 0; i < len; i++)
     {
         Int_w25q32_write_byte(data[i]);
     }
-    // 4. À­¸ßÆ¬Ñ¡
+    // 4. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_stop();
+    // 5. ï¿½ï¿½ï¿½È´ï¿½Ò³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    Int_w25q32_wait_busy();
 }
 
 /**
- * @brief ²Á³ý1ÉÈÇøÓò
+ * @brief ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  *
  */
 void Int_w25q32_erase_sector(uint8_t block, uint8_t sector)
 {
-    // 1. Ð´Ê¹ÄÜ
+    // 1. Ð´Ê¹ï¿½ï¿½
     Int_w25q32_write_enable();
 
-    // 2. À­µÍÆ¬Ñ¡
+    // 2. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_start();
     uint32_t addr = (uint32_t)block * 65536 + (uint32_t)sector * 4096;
-    // 3. ·¢ËÍ²Á³ýÖ¸Áî
+    // 3. ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
     Int_w25q32_write_byte(W25Q32_ERASE_SECTOR);
-    // 4. ·¢ËÍµØÖ·
+    // 4. ï¿½ï¿½ï¿½Íµï¿½Ö·
     Int_w25q32_write_byte((addr >> 16) & 0xff);
     Int_w25q32_write_byte((addr >> 8) & 0xff);
     Int_w25q32_write_byte(addr & 0xff);
-    // 5. À­¸ßÆ¬Ñ¡
+    // 5. ï¿½ï¿½ï¿½ï¿½Æ¬Ñ¡
     Int_w25q32_stop();
+    // 6. ï¿½ï¿½ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    Int_w25q32_wait_busy();
 }

@@ -10,7 +10,7 @@
       <TargetName>CAR</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060960::V5.06 update 7 (build 960)::.\ARMCC</pCCUsed>
+      <pCCUsed>5060750::V5.06 update 6 (build 750)::ARMCC</pCCUsed>
       <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
@@ -83,7 +83,7 @@
             <RunUserProg1>0</RunUserProg1>
             <RunUserProg2>1</RunUserProg2>
             <UserProg1Name></UserProg1Name>
-            <UserProg2Name></UserProg2Name>
+            <UserProg2Name>fromelf  --bin  --output=CAR.bin  CAR\CAR.axf</UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
             <nStopA1X>0</nStopA1X>
@@ -186,6 +186,7 @@
             <RvdsVP>0</RvdsVP>
             <RvdsMve>0</RvdsMve>
             <RvdsCdeCp>0</RvdsCdeCp>
+            <nBranchProt>0</nBranchProt>
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -1200,16 +1201,6 @@
         <Group>
           <GroupName>Drivers/hardware</GroupName>
           <Files>
-            <File>
-              <FileName>OLED_Data.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Drivers\hardware\OLED_Data.c</FilePath>
-            </File>
-            <File>
-              <FileName>OLED.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Drivers\hardware\OLED.c</FilePath>
-            </File>
             <File>
               <FileName>circle_buffer.c</FileName>
               <FileType>1</FileType>

@@ -21,7 +21,10 @@
 #include "can.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "queue.h"
+extern QueueHandle_t can_rx_queue;
+extern QueueHandle_t mqtt_can_rx_queue;
+extern QueueHandle_t lvgl_can_rx_queue;
 /* USER CODE END 0 */
 
 CAN_HandleTypeDef hcan;
@@ -38,7 +41,7 @@ void MX_CAN_Init(void)
 
   /* USER CODE END CAN_Init 1 */
   hcan.Instance = CAN1;
-  hcan.Init.Prescaler = 36;
+  hcan.Init.Prescaler = 6;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   hcan.Init.TimeSeg1 = CAN_BS1_3TQ;
@@ -221,6 +224,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         xQueueSendFromISR(can_rx_queue, &msg, &xHigherPriorityTaskWoken);
         xQueueSendFromISR(mqtt_can_rx_queue,&msg, &xHigherPriorityTaskWoken);
+        xQueueSendFromISR(lvgl_can_rx_queue, &msg, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
 }

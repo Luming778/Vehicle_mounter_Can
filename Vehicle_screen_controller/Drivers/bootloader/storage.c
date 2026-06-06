@@ -2,6 +2,10 @@
 #include "storage_adapter.h"
 #include "Int_w24c02.h"
 #include "stdio.h"
+
+/* W25Q32: sector = 4KB (16 pages × 256 bytes), sector 0 保留给元数据 */
+#define STORAGE_FW_MAX_SECTOR   128    /* 128 × 4KB = 512KB，预留余量 */
+
 void storage_write_firmware(uint32_t addr, uint8_t *data, uint16_t len)
 {
     storage_adapter_write_flash(addr, data, len);
@@ -12,12 +16,16 @@ void storage_read_firmware(uint32_t addr, uint8_t *data, uint16_t len)
     storage_adapter_read_flash(addr, data, len);
 }
 
+/**
+ * @brief  擦除固件存储区域（sector 1 ~ STORAGE_FW_MAX_SECTOR）
+ * @note   必须在固件写入前调用，确保所有目标页为 0xFF
+ *         使用固定扇区数，不依赖 total_rec_len（调用时该值为 0）
+ */
 void storage_erase_firmware_area(void)
 {
-    // 擦除 sector 1-30（120KB），足够存放 100KB 固件
-    for (uint8_t i = 1; i <= 30; i++)
+    for (uint16_t i = 1; i <= STORAGE_FW_MAX_SECTOR; i++)
     {
-        storage_adapter_erase_sector(0, i);
+        storage_adapter_erase_sector(0, (uint8_t)i);
     }
 }
 

@@ -69,7 +69,7 @@
 
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
     /** Size of memory available for `lv_malloc()` in bytes (>= 2kB) */
-    #define LV_MEM_SIZE (12 * 1024U)          /**< [bytes] */
+    #define LV_MEM_SIZE (19 * 1024U)          /**< [bytes] */
 
     /** Size of the memory expand for `lv_malloc()` in bytes */
     #define LV_MEM_POOL_EXPAND_SIZE 0
@@ -637,7 +637,7 @@
 #define LV_FONT_MONTSERRAT_10 0
 #define LV_FONT_MONTSERRAT_12 0
 #define LV_FONT_MONTSERRAT_14 1
-#define LV_FONT_MONTSERRAT_16 0
+#define LV_FONT_MONTSERRAT_16 1
 #define LV_FONT_MONTSERRAT_18 0
 #define LV_FONT_MONTSERRAT_20 0
 #define LV_FONT_MONTSERRAT_22 0
@@ -763,11 +763,11 @@
 
 #define LV_USE_BUTTONMATRIX  1
 
-#define LV_USE_CALENDAR   1
+#define LV_USE_CALENDAR   0
 
-#define LV_USE_CANVAS     1
+#define LV_USE_CANVAS     0
 
-#define LV_USE_CHART      1
+#define LV_USE_CHART      0
 
 #define LV_USE_CHECKBOX   1
 
@@ -797,7 +797,7 @@
 
 #define LV_USE_SCALE      1
 
-#define LV_USE_SLIDER     0   /**< Requires: lv_bar */
+#define LV_USE_SLIDER     1   /**< Requires: lv_bar */
 
 #define LV_USE_SPAN       0
 
@@ -1068,7 +1068,7 @@
 
     /** 1: Show CPU usage and FPS count.
      *  - Requires `LV_USE_SYSMON = 1` */
-    #define LV_USE_PERF_MONITOR 1
+    #define LV_USE_PERF_MONITOR 0
     #if LV_USE_PERF_MONITOR
         #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
 
@@ -1410,7 +1410,7 @@
 #define LV_BUILD_EXAMPLES 0
 
 /** Build the demos */
-#define LV_BUILD_DEMOS 1
+#define LV_BUILD_DEMOS 0
 
 /*===================
  * DEMO USAGE
