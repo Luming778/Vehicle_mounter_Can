@@ -1,6 +1,6 @@
 # Vehicle Control System - STM32F103 Multi-Node
 
-基于三片STM32F103的车载多节点智能控制系统，支持CAN总线通信、语音控制与WiFi远程控制，具备CAN总线固件升级能力。
+基于三片STM32F103的车载多节点智能控制系统，支持CAN总线通信、语音控制与MQTT远程控制，具备CAN总线固件升级能力。
 
 ---
 
@@ -33,7 +33,7 @@
 1. 通过LVGL图形界面实时显示设备一、设备二的车灯、车门、车窗、天窗状态
 2. 支持LCD触摸屏操作控制
 3. 接收语音模块指令，解析后通过CAN总线向设备节点下发控制命令
-4. 通过WiFi模块将设备状态定时上传至服务器
+4. 通过WiFi模块将设备状态定时上传至mqtt服务器
 5. 接收服务器下发的控制指令，通过CAN总线转发至对应设备节点
 6. 支持CAN总线固件升级（接收固件写入W25Q32，重启后由bootloader完成升级）
 
@@ -80,7 +80,7 @@
 ```
 ├── Vehicle_module_controller_1/    # 设备节点一程序（车灯/车窗/天窗）
 ├── Vehicle_module_controller_2/    # 设备节点二程序（车门）
-├── Vehicle_screen_controller/      # 主控屏节点程序（LVGL显示/语音/WiFi/OTA接收）
+├── Vehicle_screen_controller/      # 主控屏节点程序（LVGL显示/语音/MQTT/OTA接收）
 └── OTA/                            # OTA固件升级系统
     ├── app_update_send/            # OTA发送端固件（烧录器板）
     ├── bootloader_start/           # 目标板启动引导程序（正式版）
